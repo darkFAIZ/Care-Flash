@@ -7,12 +7,12 @@ Care-Flash is a two-sided care service platform with two separate Flutter apps t
 
 ## Software requirements
 
-- [Care-Flash care seeker SRS](./Care-Flash_SRS_IEEE830.md)
-- [Care-Merchant caregiver SRS](./Care-Merchant_SRS_IEEE830.md)
-- [Shared platform SRS](./Care-Flash-Platform_SRS_IEEE830.md)
+- [Care-Flash care seeker SRS](./docs/Care-Flash_SRS_IEEE830.md)
+- [Care-Merchant caregiver SRS](./docs/Care-Merchant_SRS_IEEE830.md)
+- [Shared platform SRS](./docs/Care-Flash-Platform_SRS_IEEE830.md)
 
 ## Mermaid diagrams
 
-- [Care-Flash care seeker flow](./Care-Flash_Mermaid.md)
-- [Care-Merchant caregiver flow](./Care-Merchant_Mermaid.md)
-- [Shared platform architecture and lifecycle](./Care-Flash-Platform_Mermaid.md)
+- [Care-Flash care seeker flow](./docs/Care-Flash_Mermaid.md)
+- [Care-Merchant caregiver flow](./docs/Care-Merchant_Mermaid.md)
+- [Shared platform architecture and lifecycle](./docs/Care-Flash-Platform_Mermaid.md)
