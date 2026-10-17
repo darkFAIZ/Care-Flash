@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+<module fileurl="file://$PROJECT_DIR$/apps/care_flash/melos_care_flash.iml" filepath="$PROJECT_DIR$/apps/care_flash/melos_care_flash.iml"/>
+<module fileurl="file://$PROJECT_DIR$/apps/care_merchant/melos_care_merchant.iml" filepath="$PROJECT_DIR$/apps/care_merchant/melos_care_merchant.iml"/>
+<module fileurl="file://$PROJECT_DIR$/melos_care_flash_workspace.iml" filepath="$PROJECT_DIR$/melos_care_flash_workspace.iml"/>
+    </modules>
+  </component>
+</project>

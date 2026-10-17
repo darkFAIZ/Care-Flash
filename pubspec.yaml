@@ -1,0 +1,9 @@
+name: care_flash_workspace
+environment:
+  sdk: ">=3.11.4 <4.0.0"
+dev_dependencies:
+  melos: ^8.9.0
+workspace:
+  - apps/care_flash
+  - apps/care_merchant
+melos: 
