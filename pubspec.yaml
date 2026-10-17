@@ -6,4 +6,7 @@ dev_dependencies:
 workspace:
   - apps/care_flash
   - apps/care_merchant
-melos: 
+  - packages/care_flash_core
+melos:
+  name: care_flash_workspace
+  repository: https://github.com/SeaMoon12/Care-Flash

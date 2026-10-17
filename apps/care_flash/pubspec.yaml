@@ -32,6 +32,8 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  care_flash_core:
+    path: ../../packages/care_flash_core
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
