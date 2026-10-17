@@ -4,7 +4,7 @@ Format: IEEE Std 830-1998
 Version: 1.1 (draft)  
 Date: October 16, 2026  
 Course: Software Requirements Engineering  
-Prepared by: TBD (team member names)
+Prepared by: Faiz, Simmon, Vincent
 
 ## 1. Introduction
 
