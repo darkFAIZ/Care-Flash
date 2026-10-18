@@ -7,18 +7,22 @@ Care-Flash is a two-sided care service platform with two separate Flutter apps t
 
 ## Running the prototype
 
-The prototype is a clickable Flutter app with a **mock platform** behind it. There is no real
-backend, payment, Grab or emergency service: everything external is simulated inside
-`packages/care_core` so it can be swapped for a real API later.
+There are two ways to run the prototype:
 
-Two notes before you demo:
+- **Offline (mock platform).** Self-contained. There is no real backend, payment, Grab or emergency
+  service: everything external is simulated inside `packages/care_core` so it can be swapped for a
+  real API later. In this mode the two apps do **not** talk to each other: they are separate
+  processes with no shared memory, so each one *simulates* the other side. Run them as two
+  independent walkthroughs, not as one shared booking.
+- **Connected (live demo).** The two apps share one backend and genuinely talk to each other: a
+  booking created in Care-Flash appears live in Care-Merchant and the caregiver's actions flow back.
+  This is the mode to show that the two sides are really connected.
 
-- **The two apps do not talk to each other live.** They are separate processes with no shared
-  memory, so each one *simulates* the other side (Care-Flash simulates the caregiver, Care-Merchant
-  simulates the care seeker). This is deliberate for the prototype. Run them as two independent
-  walkthroughs, not as one shared booking.
-- Every screen with a **bug icon** (debug builds only) opens **Demo Controls**, which lets you fire
-  the simulated events for the other side (caregiver accepts, care seeker scans the button, and so on).
+Every screen with a **bug icon** (debug builds only) opens **Demo Controls**, which fires the
+simulated events for the other side. In connected mode the other side is a real app, so those
+controls become no-ops.
+
+### Offline (two independent walkthroughs)
 
 ```bash
 # Terminal 1 - care seeker app
@@ -33,6 +37,42 @@ flutter run -d edge
 Signing in: any valid-looking email plus a password of 6+ characters logs you straight into a
 ready, verified demo account. Use **Create account** instead if you want to walk through the
 caregiver onboarding (student ID, safety module).
+
+### Connected live demo (backend + two Edge windows)
+
+Start the shared backend once, then launch each app pointing at it. On the web each app is shown
+inside a phone frame so the mobile aspect ratio is preserved.
+
+```bash
+# Terminal 1 - the shared backend (run from the repository root)
+dart run packages/care_backend/bin/server.dart 8080
+
+# Terminal 2 - care seeker (Care-Flash)
+cd apps/care_flash
+flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080
+
+# Terminal 3 - caregiver (Care-Merchant)
+cd apps/care_merchant
+flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080
+```
+
+The backend keeps accounts in memory, so **Create account** in both apps the first time (the
+caregiver must finish onboarding and set themselves **Available**). Without `--dart-define` the
+apps fall back to the offline mock above.
+
+**Connected script (one booking, two windows):**
+
+1. Care-Merchant: **Create account** → student ID → simulated approval → safety module → set
+   **Available**. Care-Flash: **Create account**.
+2. Care-Flash: request a visit (help type → checklist → location/time/duration → gender filter →
+   price) and **Pay**. The client code appears.
+3. Care-Merchant: the request lands in the **Requests** tab → **Accept** → **Start trip** →
+   **Mark arrived**.
+4. Care-Flash shows *arrived*; read the client code and enter it in Care-Merchant. Verify the
+   **safety button** in Care-Flash to start the session in both windows.
+5. Care-Merchant: **Mark work complete** → the earnings appear. Care-Flash: rate the caregiver →
+   it shows up in the caregiver's **Feedback** tab.
+
 
 ## Demo script
 

@@ -4,28 +4,19 @@
 /// Care-Flash imports this package for the care seeker flow; Care-Merchant uses
 /// the same models for the caregiver flow. See the SRS in `docs/` for the
 /// requirements referenced in the code.
+///
+/// The pure-Dart domain (models, enums, pricing, policy and the repository
+/// interfaces) lives in the `care_domain` package and is re-exported here so
+/// the apps only ever depend on `care_core`. The Flutter-specific mock platform
+/// is defined in this package. (AGENTS.md §5)
 library;
 
-export 'src/enums.dart';
-export 'src/formatting.dart';
+export 'package:care_domain/care_domain.dart';
+
 export 'src/mock/mock_care_platform.dart';
 export 'src/mock/mock_caregiver_platform.dart';
 export 'src/mock/mock_data.dart';
-export 'src/models/account.dart';
-export 'src/models/booking.dart';
-export 'src/models/boundary_checklist.dart';
-export 'src/models/caregiver_account.dart';
-export 'src/models/earnings.dart';
-export 'src/models/feedback.dart';
-export 'src/models/help_request.dart';
-export 'src/models/location.dart';
-export 'src/models/payment.dart';
-export 'src/models/pricing.dart';
-export 'src/models/safety.dart';
-export 'src/platform_policy.dart';
-export 'src/pricing/pricing.dart';
-export 'src/repositories/auth_repository.dart';
-export 'src/repositories/booking_repository.dart';
-export 'src/repositories/caregiver_repository.dart';
-export 'src/repositories/demo_controls.dart';
-export 'src/repositories/payment_repository.dart';
+
+export 'src/remote/backend_client.dart';
+export 'src/remote/remote_care_platform.dart';
+export 'src/remote/remote_caregiver_platform.dart';

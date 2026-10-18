@@ -7,4 +7,6 @@ workspace:
   - apps/care_flash
   - apps/care_merchant
   - packages/care_core
+  - packages/care_domain
+  - packages/care_backend
 melos: 

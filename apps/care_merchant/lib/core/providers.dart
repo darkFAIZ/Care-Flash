@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// This keeps the app independent of how the platform is built, so an HTTP
 /// implementation can replace the mock later without changing the widgets.
 /// (AGENTS.md §5)
-final platformProvider = Provider<MockCaregiverPlatform>((ref) {
+final platformProvider = Provider<CaregiverPlatform>((ref) {
   throw StateError('platformProvider must be overridden in ProviderScope.');
 });
 

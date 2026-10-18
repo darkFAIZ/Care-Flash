@@ -1,6 +1,4 @@
-import '../enums.dart';
-import '../models/account.dart';
-import '../models/payment.dart';
+import 'package:care_domain/care_domain.dart';
 
 /// Seed data for the mock platform. Replace with real data when a backend
 /// exists. (AGENTS.md §4, §5)

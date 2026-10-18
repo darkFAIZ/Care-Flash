@@ -2,20 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:care_domain/care_domain.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../enums.dart';
-import '../formatting.dart';
-import '../models/booking.dart';
-import '../models/boundary_checklist.dart';
-import '../models/caregiver_account.dart';
-import '../models/earnings.dart';
-import '../models/feedback.dart';
-import '../models/location.dart';
-import '../models/safety.dart';
-import '../platform_policy.dart';
-import '../pricing/pricing.dart';
-import '../repositories/caregiver_repository.dart';
 
 /// A local, in-process stand-in for the shared platform, from the caregiver's
 /// side.
@@ -25,8 +13,7 @@ import '../repositories/caregiver_repository.dart';
 /// and reacts to the caregiver accepting or declining. It is the default
 /// implementation behind [CaregiverRepository] and can be replaced by an HTTP
 /// client later. (AGENTS.md §5)
-class MockCaregiverPlatform
-    implements CaregiverRepository, CaregiverDemoControls {
+class MockCaregiverPlatform implements CaregiverPlatform {
   MockCaregiverPlatform._(
     this._prefs,
     this._random,
@@ -815,6 +802,7 @@ class MockCaregiverPlatform
 
   /// Debug-only: the client code the care seeker is currently presenting, so
   /// the demo can be driven without a second device. (FR-CM-13)
+  @override
   String? get debugClientCode => _activeBooking?.clientCode;
 
   // ---------------------------------------------------------------------------

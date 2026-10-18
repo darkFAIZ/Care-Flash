@@ -2,21 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:care_domain/care_domain.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../enums.dart';
-import '../formatting.dart';
-import '../models/account.dart';
-import '../models/booking.dart';
-import '../models/feedback.dart';
-import '../models/help_request.dart';
-import '../models/payment.dart';
-import '../models/safety.dart';
-import '../pricing/pricing.dart';
-import '../repositories/auth_repository.dart';
-import '../repositories/booking_repository.dart';
-import '../repositories/demo_controls.dart';
-import '../repositories/payment_repository.dart';
 import 'mock_data.dart';
 
 /// A local, in-process stand-in for the shared platform.
@@ -26,8 +14,7 @@ import 'mock_data.dart';
 /// timers and the demo hooks. It is the default implementation behind the
 /// repository interfaces and can be replaced by an HTTP client later.
 /// (AGENTS.md §5)
-class MockCarePlatform
-    implements AuthRepository, BookingRepository, PaymentRepository, DemoControls {
+class MockCarePlatform implements CareSeekerPlatform {
   MockCarePlatform._(this._prefs, this._random);
 
   static const String _userKey = 'care_core.mock.user';

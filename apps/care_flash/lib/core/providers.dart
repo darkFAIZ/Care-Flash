@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The mock platform is created in `main()` and injected here. This keeps the
 /// app independent of how the platform is built, so an HTTP implementation can
 /// replace the mock later without changing the widgets. (AGENTS.md §5)
-final platformProvider = Provider<MockCarePlatform>((ref) {
+final platformProvider = Provider<CareSeekerPlatform>((ref) {
   throw StateError('platformProvider must be overridden in ProviderScope.');
 });
 
