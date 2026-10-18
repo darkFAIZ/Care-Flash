@@ -1,0 +1,23 @@
+name: care_core
+description: "Shared models, enums, pricing rules, repository interfaces and mock platform for the Care-Flash platform."
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.11.4
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  fake_async: ^1.3.1
+
+flutter:
+  uses-material-design: true

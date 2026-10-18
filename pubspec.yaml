@@ -6,4 +6,5 @@ dev_dependencies:
 workspace:
   - apps/care_flash
   - apps/care_merchant
+  - packages/care_core
 melos: 
