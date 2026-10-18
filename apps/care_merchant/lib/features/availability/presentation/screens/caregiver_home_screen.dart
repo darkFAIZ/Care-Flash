@@ -46,7 +46,7 @@ class CaregiverHomeScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.safetyGreen.withAlpha(40),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.pad(const BorderSide(color: AppColors.safetyGreen)),
+                      border: Border.all(color: AppColors.safetyGreen),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
