@@ -117,8 +117,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           ],
           const SizedBox(height: 4),
           Text(
-            'Card details are handled by the payment provider and are never '
-            'stored by Care-Flash.',
+            'Demo checkout only: this confirms the booking in Supabase but '
+            'does not charge a real payment method.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

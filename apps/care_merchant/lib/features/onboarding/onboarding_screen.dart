@@ -78,7 +78,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'We review your residential ID and identity card before you can receive requests. '
-                      'This usually takes a short while.',
+                      'This demo records a pending review only; it does not upload or store the ID number or card photo. Do not enter real identity details.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

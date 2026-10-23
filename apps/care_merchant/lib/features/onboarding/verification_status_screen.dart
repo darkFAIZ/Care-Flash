@@ -34,8 +34,8 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final message = switch (status) {
       VerificationStatus.pending =>
-        'Your identity card is being reviewed. This usually takes a short while. '
-            'You will be able to receive requests once you are verified.',
+        'Your demo verification request is pending. An administrator must approve this test caregiver in Supabase before they can receive requests. '
+            'The app does not upload or store identity card images.',
       VerificationStatus.approved =>
         'You are verified. You can now complete the safety module and start '
             'receiving requests.',

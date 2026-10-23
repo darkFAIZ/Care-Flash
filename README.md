@@ -14,7 +14,7 @@ There are two ways to run the prototype:
   real API later. In this mode the two apps do **not** talk to each other: they are separate
   processes with no shared memory, so each one *simulates* the other side. Run them as two
   independent walkthroughs, not as one shared booking.
-- **Connected (live demo).** The two apps share one backend and genuinely talk to each other: a
+- **Connected (Supabase live demo).** The two apps share one Supabase project and genuinely talk to each other: a
   booking created in Care-Flash appears live in Care-Merchant and the caregiver's actions flow back.
   This is the mode to show that the two sides are really connected.
 
@@ -38,93 +38,102 @@ Signing in: any valid-looking email plus a password of 6+ characters logs you st
 ready, verified demo account. Use **Create account** instead if you want to walk through the
 caregiver onboarding (residential ID, safety module).
 
-### Connected live demo (backend + two Edge windows)
+### Connected live demo (Supabase + two Chrome windows)
 
-Both apps have their own frontend-facing platform adapter (`RemoteCarePlatform` for Care-Flash
-and `RemoteCaregiverPlatform` for Care-Merchant). Those adapters connect to the same shared
-Care-Flash platform backend, which owns accounts, caregiver availability, request matching,
-payments, and booking state. Backend snapshots are pushed to both apps over WebSocket.
+Both apps use their own Supabase platform adapter. Supabase Auth owns accounts, Postgres stores
+caregiver profiles and requests, row-level security controls access, and Supabase Realtime sends
+request changes to the other app. Both apps must use the same Supabase URL and publishable key.
 
 ```mermaid
 flowchart LR
   CF[Care-Flash app] --> CFBFF[Care-seeker platform adapter]
   CM[Care-Merchant app] --> CMBFF[Caregiver platform adapter]
-  CFBFF --> WS[Shared Care-Flash backend<br/>WebSocket + booking state]
-  CMBFF --> WS
+  CFBFF --> SB[Supabase Auth + Postgres + Realtime]
+  CMBFF --> SB
 ```
 
-Start the shared backend once, then launch each app with the same backend URL. On the web each
-app is shown inside a phone frame so the mobile aspect ratio is preserved.
+The project URL and its public publishable key are configured in both apps. On the web each app is
+shown inside a phone frame.
 
-```bash
-# Terminal 1 - shared backend (run from the repository root; listens for devices)
-dart run packages/care_backend/bin/server.dart 8080 0.0.0.0
-
-# Terminal 2 - care seeker (Care-Flash); defaults to ws://localhost:8080
+```powershell
 cd apps/care_flash
-flutter run -d edge
+flutter run -d chrome
 
-# Terminal 3 - caregiver (Care-Merchant)
+# In a second terminal:
 cd apps/care_merchant
-flutter run -d edge
+flutter run -d chrome
 ```
 
-For Android emulators, use `10.0.2.2` to reach the computer running the backend:
+For another Supabase project, override `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in both app
+commands with `--dart-define`. Use only the public publishable key, never a secret/service-role
+key. For Android builds against the configured project:
 
-```bash
+```powershell
 cd apps/care_flash
-flutter run -d <android-emulator> --dart-define=BACKEND_URL=ws://10.0.2.2:8080
+flutter build apk --release
 
 cd apps/care_merchant
-flutter run -d <android-emulator> --dart-define=BACKEND_URL=ws://10.0.2.2:8080
+flutter build apk --release
 ```
 
-For two physical phones, connect both to the same Wi-Fi and replace `10.0.2.2` with the
-computer's local IPv4 address (for example, `192.168.1.20`). Allow Dart through the computer's
-private-network firewall if prompted. `ws://` cleartext traffic is enabled for Android debug
-builds only; deployed builds should use a secured `wss://` backend URL.
+Installed phones can connect from different networks; no local computer address is needed. Set the
+Supabase Auth site's URL configuration to include the app's redirect URL when email confirmation
+is enabled. Create one seeker and one caregiver account.
 
-The backend saves accounts and booking state to
-`packages/care_backend/data/care_backend.json` by default, so local
-accounts survive a restart. Set `CARE_DATA_FILE` to move that file to another path. **Create
-account** in both apps the first time; the caregiver must finish onboarding and set themselves
-**Available**. Both apps use the shared backend by default. Use
-`--dart-define=BACKEND_URL=mock` only for an intentionally separate offline walkthrough. If the
-backend is unavailable, the app shows a connection screen instead of silently using mock data.
+### Supabase database foundation
 
-### Deploy the shared backend to the internet
+The app uses `profiles`, `caregiver_profiles`, `bookings`, protected booking details/secrets, and
+rating/feedback tables. Request creation and lifecycle changes go through database RPC functions;
+booking updates are broadcast over Realtime. The local migration files under `supabase/migrations/`
+have also been applied to the connected project. Never put a Supabase secret/service-role key in an
+app build.
 
-The repository includes a Docker image definition and a Render Blueprint. To create a public
-demo service:
+Caregiver matching only offers accounts whose identity status is approved and safety module is
+complete. The prototype does not upload or store residential ID numbers or identity-card photos;
+do not enter real identity details. Approve a test caregiver from the Supabase SQL editor after
+creating the account:
 
-1. Push this repository to a GitHub account connected to Render.
-2. In Render, create a new **Blueprint** from the repository and deploy `render.yaml`. It creates
-   the backend in Singapore with a persistent disk mounted for its JSON data file.
-3. Copy the service's HTTPS hostname, then use it as a secure WebSocket URL in **both** app builds:
-
-```bash
-cd apps/care_flash
-flutter build apk --dart-define=BACKEND_URL=wss://YOUR-SERVICE.onrender.com
-
-cd apps/care_merchant
-flutter build apk --dart-define=BACKEND_URL=wss://YOUR-SERVICE.onrender.com
+```sql
+update public.caregiver_profiles cp
+set verification_status = 'approved', safety_module_completed = true
+from public.profiles p
+where cp.user_id = p.id and p.role = 'caregiver'
+  and p.full_name = 'YOUR TEST CAREGIVER NAME';
 ```
 
-Replace `YOUR-SERVICE` with the hostname shown by Render. The Render plan with a persistent disk
-may incur hosting charges. The included JSON store and payment/identity flows are for a class/demo
-prototype; do not enter real government ID details or payment credentials. Before a real launch,
-move to a managed database with encryption and access controls, review personal-data handling,
-and integrate real identity and payment providers.
+The payment step is a demo confirmation, not a real payment integration. Grab ordering is still
+separate and is not connected to Grab's private backend.
+
+### Deploy both apps online
+
+`render.yaml` builds both Flutter web apps against the same Supabase project. Connect the repository
+to Render as a Blueprint and deploy both static sites. The previous custom backend service may
+remain in your Render account, but these app builds use Supabase directly.
 
 The caregiver receives a live in-app request alert after the care seeker completes payment in
 Care-Flash. The request also appears on the Care-Merchant Requests tab. This demo alert requires
 Care-Merchant to be open and connected; push notifications while the app is closed need a push
 service such as Firebase Cloud Messaging.
 
+#### Install connected Android apps
+
+Build both APKs with the configured Supabase project. Add `--dart-define` overrides to both builds
+if you use a different project.
+
+```powershell
+cd apps/care_flash
+flutter build apk --release
+
+cd ../care_merchant
+flutter build apk --release
+```
+
+Install the newly built APKs on both phones. Both apps point to the same Supabase project.
+
 **Connected script (one booking, two windows):**
 
-1. Care-Merchant: **Create account** → residential ID → simulated approval → safety module → set
-   **Available**. Care-Flash: **Create account**.
+1. Care-Merchant: **Create account** → complete the demo safety module. In Supabase SQL editor,
+   approve the test caregiver as shown above. Care-Flash: **Create account**.
 2. Care-Flash: request a visit (help type → checklist → location/time/duration → gender filter →
    price) and pay the caregiver service plus platform fee. The care seeker separately orders and
    pays for the caregiver's ride in Grab; ride ordering/status is not integrated in this prototype.
@@ -133,8 +142,8 @@ service such as Firebase Cloud Messaging.
 4. Care-Merchant shows its one-time caregiver code after arrival. The caregiver says it and the
    care seeker enters it in Care-Flash to confirm identity. Then verify the **safety button** in
    Care-Flash to start the session in both windows.
-5. Care-Merchant: **Mark work complete** → the earnings appear. Care-Flash: rate the caregiver →
-   it shows up in the caregiver's **Feedback** tab.
+5. Care-Merchant: **Mark work complete**. The final booking status appears in both apps. The
+   earnings and payout screens are still prototype-only; this Supabase setup does not move money.
 
 
 ## Demo script

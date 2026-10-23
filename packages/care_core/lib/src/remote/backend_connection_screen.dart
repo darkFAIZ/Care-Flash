@@ -36,6 +36,9 @@ class _BackendConnectionScreenState extends State<BackendConnectionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final host = Uri.tryParse(widget.backendUrl)?.host.toLowerCase();
+    final isLoopback =
+        host == 'localhost' || host == '127.0.0.1' || host == '::1';
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -55,10 +58,15 @@ class _BackendConnectionScreenState extends State<BackendConnectionScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${widget.appName} is set to connect to '
-                    '${widget.backendUrl}. Start the '
-                    'backend from the Care-Flash repository root, then retry. '
-                    'Both apps must use this same URL.',
+                    isLoopback
+                        ? '${widget.appName} is set to ${widget.backendUrl}. '
+                              'On a phone, localhost means the phone itself. '
+                              'Rebuild this app with your public backend URL '
+                              '(wss://...) and use that same URL for both apps.'
+                        : '${widget.appName} could not connect to '
+                              '${widget.backendUrl}. Check that the backend is '
+                              'deployed and reachable, then confirm both apps '
+                              'use this exact same URL.',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -73,8 +81,15 @@ class _BackendConnectionScreenState extends State<BackendConnectionScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: SelectableText(
-                        'dart run packages/care_backend/bin/server.dart '
-                        '8080 0.0.0.0\n\nConnection error: ${widget.error}',
+                        isLoopback
+                            ? 'flutter build apk --release '
+                                  '--dart-define=BACKEND_URL='
+                                  'wss://YOUR-BACKEND.onrender.com\n\n'
+                                  'Install the newly built APK on your phone. '
+                                  'Repeat for both apps with the same backend URL.\n\n'
+                                  'Connection error: ${widget.error}'
+                            : 'Backend URL: ${widget.backendUrl}\n\n'
+                                  'Connection error: ${widget.error}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontFamily: 'monospace',
                         ),

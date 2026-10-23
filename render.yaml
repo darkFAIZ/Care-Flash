@@ -18,3 +18,37 @@ services:
       name: care-flash-platform-data
       mountPath: /var/data
       sizeGB: 1
+
+  - type: web
+    name: care-flash-seeker
+    runtime: static
+    plan: free
+    buildCommand: >-
+      git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$HOME/flutter"
+      && export PATH="$HOME/flutter/bin:$PATH"
+      && cd apps/care_flash
+      && flutter config --enable-web
+      && flutter pub get
+      && flutter build web --release
+    staticPublishPath: apps/care_flash/build/web
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: care-flash-caregiver
+    runtime: static
+    plan: free
+    buildCommand: >-
+      git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$HOME/flutter"
+      && export PATH="$HOME/flutter/bin:$PATH"
+      && cd apps/care_merchant
+      && flutter config --enable-web
+      && flutter pub get
+      && flutter build web --release
+    staticPublishPath: apps/care_merchant/build/web
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
