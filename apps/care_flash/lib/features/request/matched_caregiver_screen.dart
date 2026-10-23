@@ -67,7 +67,9 @@ class MatchedCaregiverScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: FilledButton(
             onPressed: () => context.go(PaymentScreen.route),
-            child: Text('Continue to payment · ${formatIdr(price.total)}'),
+            child: Text(
+              'Continue to payment · ${formatIdr(price.serviceTotal)}',
+            ),
           ),
         ),
       ),
@@ -116,10 +118,10 @@ class _CaregiverCard extends StatelessWidget {
               spacing: 8,
               alignment: WrapAlignment.center,
               children: [
-                if (caregiver.studentVerified)
+                if (caregiver.identityVerified)
                   const Chip(
                     avatar: Icon(Icons.school_outlined, size: 18),
-                    label: Text('Student verified'),
+                    label: Text('Identity verified'),
                   ),
                 if (caregiver.safetyBadge)
                   const Chip(
@@ -151,26 +153,37 @@ class _VisitSummaryCard extends StatelessWidget {
           children: [
             Text('Visit details', style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
-            _row(context, Icons.volunteer_activism_outlined, 'Help type',
-                booking.helpType.label),
-            _row(context, Icons.place_outlined, 'Location',
-                booking.location.label),
-            _row(context, Icons.event_outlined, 'When',
-                formatVisitTime(booking.scheduledAt)),
-            _row(context, Icons.timer_outlined, 'Duration',
-                booking.duration.label),
+            _row(
+              context,
+              Icons.volunteer_activism_outlined,
+              'Help type',
+              booking.helpType.label,
+            ),
+            _row(
+              context,
+              Icons.place_outlined,
+              'Location',
+              booking.location.label,
+            ),
+            _row(
+              context,
+              Icons.event_outlined,
+              'When',
+              formatVisitTime(booking.scheduledAt),
+            ),
+            _row(
+              context,
+              Icons.timer_outlined,
+              'Duration',
+              booking.duration.label,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _row(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _row(BuildContext context, IconData icon, String label, String value) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),

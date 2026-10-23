@@ -4,26 +4,56 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/providers.dart';
+import 'core/theme.dart';
 
-/// The shared demo backend to connect to, or empty to run fully offline.
-///
-/// Passed at build time:
-/// `flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080`.
-/// When set, Care-Merchant uses the real platform over WebSocket so the
-/// requests a care seeker submits from Care-Flash arrive here live; otherwise it
-/// falls back to the mock.
-const String _backendUrl = String.fromEnvironment('BACKEND_URL');
+/// Both apps connect to this shared local service by default. Set to `mock` to
+/// intentionally run this app as an independent offline demo.
+const String _backendUrl = String.fromEnvironment(
+  'BACKEND_URL',
+  defaultValue: 'ws://localhost:8080',
+);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final CaregiverPlatform platform;
-  if (_backendUrl.isEmpty) {
-    platform = await MockCaregiverPlatform.create();
-  } else {
-    final remote = RemoteCaregiverPlatform(CareBackendClient(_backendUrl));
-    await remote.connect();
-    platform = remote;
+  await _startApp();
+}
+
+Future<void> _startApp() async {
+  try {
+    final CaregiverPlatform platform;
+    if (_backendUrl == 'mock') {
+      platform = await MockCaregiverPlatform.create();
+    } else {
+      final remote = RemoteCaregiverPlatform(CareBackendClient(_backendUrl));
+      await remote.connect();
+      platform = remote;
+    }
+    runApp(
+      ProviderScope(
+        overrides: [platformProvider.overrideWithValue(platform)],
+        child: const CareMerchantApp(),
+      ),
+    );
+  } catch (error) {
+    runApp(
+      MaterialApp(
+        title: 'Care-Merchant',
+        theme: CareMerchantTheme.light(),
+        darkTheme: CareMerchantTheme.dark(),
+        home: BackendConnectionScreen(
+          appName: 'Care-Merchant',
+          backendUrl: _backendUrl,
+          error: error.toString(),
+          onRetry: _startApp,
+          onUseOffline: _startOffline,
+        ),
+      ),
+    );
   }
+}
+
+Future<void> _startOffline() async {
+  final platform = await MockCaregiverPlatform.create();
   runApp(
     ProviderScope(
       overrides: [platformProvider.overrideWithValue(platform)],

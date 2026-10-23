@@ -32,24 +32,43 @@ class _Conn {
 /// app, so a booking created in Care-Flash shows up live in Care-Merchant and
 /// vice versa. (AGENTS.md §5)
 class CareBackendServer {
-  CareBackendServer({this.port = 8080, CareBackendState? state})
-      : state = state ?? CareBackendState();
+  CareBackendServer({
+    this.port = 8080,
+    this.host = '127.0.0.1',
+    this.dataFilePath,
+    CareBackendState? state,
+  }) : state = state ?? CareBackendState();
 
   final int port;
+
+  /// Interface to listen on. Use `0.0.0.0` for emulator/phone access.
+  final String host;
+
+  /// Optional JSON state file. Leave null for isolated in-memory tests.
+  final String? dataFilePath;
   final CareBackendState state;
 
   HttpServer? _server;
   final Map<WebSocket, _Conn> _conns = {};
+  Future<void> _persistenceQueue = Future<void>.value();
 
   /// The port the server is actually listening on, or null before [start].
   /// Useful when constructed with port 0 to pick a free port (tests).
   int? get boundPort => _server?.port;
 
   Future<void> start() async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+    await _loadState();
+    final address =
+        InternetAddress.tryParse(host) ??
+        (host == 'localhost'
+            ? InternetAddress.loopbackIPv4
+            : InternetAddress.anyIPv4);
+    final server = await HttpServer.bind(address, port);
     _server = server;
     // ignore: avoid_print
-    print('Care-Flash backend listening on ws://localhost:${server.port}');
+    print(
+      'Care-Flash shared backend listening on ${address.address}:${server.port}',
+    );
     server.listen(_onRequest, onError: (_) {});
   }
 
@@ -57,6 +76,12 @@ class CareBackendServer {
     if (WebSocketTransformer.isUpgradeRequest(request)) {
       final socket = await WebSocketTransformer.upgrade(request);
       _onConnection(socket);
+    } else if (request.uri.path == '/health') {
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType.json
+        ..write('{"status":"ok"}');
+      await request.response.close();
     } else {
       request.response
         ..statusCode = HttpStatus.ok
@@ -96,15 +121,41 @@ class CareBackendServer {
     final req = msg['req'];
     final op = msg['op'];
     if (req is! int || op is! String) return;
-    final args = (msg['args'] as Map<String, Object?>?) ?? const <String, Object?>{};
+    final args =
+        (msg['args'] as Map<String, Object?>?) ?? const <String, Object?>{};
 
     try {
       final val = _dispatch(conn, op, args);
+      await _persistState();
       conn.send({'res': req, 'ok': true, 'val': val});
     } catch (e) {
       conn.send({'res': req, 'ok': false, 'err': _cleanError(e)});
     }
     _broadcast();
+  }
+
+  Future<void> _loadState() async {
+    final path = dataFilePath;
+    if (path == null) return;
+    final file = File(path);
+    if (!await file.exists()) return;
+    final decoded = jsonDecode(await file.readAsString());
+    state.restoreFromJson(Map<String, Object?>.from(decoded as Map));
+  }
+
+  Future<void> _persistState() async {
+    final path = dataFilePath;
+    if (path == null) return;
+    final write = _persistenceQueue.then((_) async {
+      final file = File(path);
+      await file.parent.create(recursive: true);
+      final temporary = File('$path.tmp');
+      await temporary.writeAsString(jsonEncode(state.toJson()), flush: true);
+      if (await file.exists()) await file.delete();
+      await temporary.rename(path);
+    });
+    _persistenceQueue = write.catchError((Object _) {});
+    await write;
   }
 
   String _cleanError(Object e) {
@@ -153,7 +204,9 @@ class CareBackendServer {
         return state.submitRequest(_seeker(conn), args);
       case 'retryWithGenderFilter':
         return state.retryWithGenderFilter(
-            _seeker(conn), GenderFilter.values.byName(args['filter']! as String));
+          _seeker(conn),
+          GenderFilter.values.byName(args['filter']! as String),
+        );
       case 'pay':
         return state.pay(
           _seeker(conn),
@@ -162,13 +215,22 @@ class CareBackendServer {
         );
       case 'cancelBooking':
         state.cancelBooking(
-            _seeker(conn), CancellationReason.values.byName(args['reason']! as String));
+          _seeker(conn),
+          CancellationReason.values.byName(args['reason']! as String),
+        );
         return null;
+      case 'verifyCaregiverCode':
+        return state.verifyCaregiverCode(
+          _seeker(conn),
+          args['code']! as String,
+        );
       case 'verifySafetyButton':
         return state.verifySafetyButton(
           _seeker(conn),
           ButtonVerification(
-            method: ButtonVerificationMethod.values.byName(args['method']! as String),
+            method: ButtonVerificationMethod.values.byName(
+              args['method']! as String,
+            ),
             payload: args['payload']! as String,
           ),
         );
@@ -177,7 +239,9 @@ class CareBackendServer {
         return null;
       case 'reportIncident':
         state.reportIncident(
-            _seeker(conn), IncidentReport.fromJson(args['report']! as Map<String, Object?>));
+          _seeker(conn),
+          IncidentReport.fromJson(args['report']! as Map<String, Object?>),
+        );
         return null;
       case 'rateCaregiver':
         state.rateCaregiver(_seeker(conn), args);
@@ -190,8 +254,7 @@ class CareBackendServer {
       case 'submitVerification':
         state.submitVerification(
           _caregiver(conn),
-          studentIdNumber: args['studentIdNumber']! as String,
-          university: args['university']! as String,
+          residentialIdNumber: args['residentialIdNumber']! as String,
           documentLabel: args['documentLabel']! as String,
         );
         return null;
@@ -199,11 +262,16 @@ class CareBackendServer {
         state.completeSafetyModule(_caregiver(conn));
         return null;
       case 'updateGender':
-        state.updateGender(_caregiver(conn), Gender.values.byName(args['gender']! as String));
+        state.updateGender(
+          _caregiver(conn),
+          Gender.values.byName(args['gender']! as String),
+        );
         return null;
       case 'updateAvailability':
         state.updateAvailability(
-            _caregiver(conn), CaregiverAvailability.values.byName(args['availability']! as String));
+          _caregiver(conn),
+          CaregiverAvailability.values.byName(args['availability']! as String),
+        );
         return null;
 
       // ----- caregiver request + session lifecycle -----
@@ -222,8 +290,6 @@ class CareBackendServer {
       case 'markArrived':
         state.markArrived(_caregiver(conn));
         return null;
-      case 'verifyClientCode':
-        return state.verifyClientCode(_caregiver(conn), args['code']! as String);
       case 'completeSession':
         state.completeSession(_caregiver(conn));
         return null;
@@ -232,13 +298,18 @@ class CareBackendServer {
         return null;
       case 'reportCareSeeker':
         state.reportCareSeeker(
-            _caregiver(conn), IncidentReport.fromJson(args['report']! as Map<String, Object?>));
+          _caregiver(conn),
+          IncidentReport.fromJson(args['report']! as Map<String, Object?>),
+        );
         return null;
       case 'rateCareSeeker':
         state.rateCareSeeker(_caregiver(conn), args);
         return null;
       case 'requestWithdrawal':
-        return state.requestWithdrawal(_caregiver(conn), args['amount']! as int);
+        return state.requestWithdrawal(
+          _caregiver(conn),
+          args['amount']! as int,
+        );
 
       default:
         throw StateError('Unknown operation: $op');

@@ -27,7 +27,9 @@ class _LanguageSheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'App language',
+              selected == AppLanguage.bahasaIndonesia
+                  ? 'Bahasa aplikasi'
+                  : 'App language',
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
@@ -48,11 +50,6 @@ class _LanguageSheet extends ConsumerWidget {
               },
             ),
           const SizedBox(height: 8),
-          // TODO(team): load real translations once Bahasa Indonesia is ready.
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Bahasa Indonesia is a preview and not fully translated yet.'),
-          ),
           const SizedBox(height: 16),
         ],
       ),

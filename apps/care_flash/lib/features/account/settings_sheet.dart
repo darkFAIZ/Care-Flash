@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:care_core/care_core.dart';
+import '../../core/providers.dart';
 
 /// Opens the settings overlay. (AGENTS.md §5: settings overlay)
 Future<void> showSettingsSheet(BuildContext context) {
@@ -9,14 +12,14 @@ Future<void> showSettingsSheet(BuildContext context) {
   );
 }
 
-class _SettingsSheet extends StatefulWidget {
+class _SettingsSheet extends ConsumerStatefulWidget {
   const _SettingsSheet();
 
   @override
-  State<_SettingsSheet> createState() => _SettingsSheetState();
+  ConsumerState<_SettingsSheet> createState() => _SettingsSheetState();
 }
 
-class _SettingsSheetState extends State<_SettingsSheet> {
+class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   // TODO(team): persist these preferences and wire them to real behaviour.
   bool _pushNotifications = true;
   bool _shareLocation = true;
@@ -32,10 +35,20 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           children: [
             Text('Settings', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
+            Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
+            for (final mode in ThemeMode.values)
+              RadioListTile<ThemeMode>(
+                value: mode,
+                groupValue: ref.watch(themeModeProvider),
+                title: Text(_modeLabel(mode)),
+                onChanged: (value) {
+                  if (value != null)
+                    ref.read(themeModeProvider.notifier).select(value);
+                },
+              ),
             SwitchListTile(
               value: _pushNotifications,
-              onChanged: (value) =>
-                  setState(() => _pushNotifications = value),
+              onChanged: (value) => setState(() => _pushNotifications = value),
               title: const Text('Push notifications'),
               subtitle: const Text('Booking, arrival and safety updates'),
             ),
@@ -56,6 +69,15 @@ class _SettingsSheetState extends State<_SettingsSheet> {
         ),
       ),
     );
+  }
+
+  String _modeLabel(ThemeMode mode) {
+    final id = ref.watch(languageProvider) == AppLanguage.bahasaIndonesia;
+    return switch (mode) {
+      ThemeMode.system => id ? 'Ikuti perangkat' : 'System default',
+      ThemeMode.light => id ? 'Terang' : 'Light',
+      ThemeMode.dark => id ? 'Gelap' : 'Dark',
+    };
   }
 
   void _showPrivacy(BuildContext context) {

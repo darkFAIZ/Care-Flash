@@ -23,9 +23,7 @@ class ActivityTab extends ConsumerWidget {
           Text('Ongoing activity', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           if (booking == null)
-            _EmptyCard(
-              message: 'You have no ongoing activity right now.',
-            )
+            _EmptyCard(message: 'You have no ongoing activity right now.')
           else
             Card(
               child: ListTile(
@@ -91,9 +89,7 @@ class _HistoryCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${booking.status.label} · ${_formatDate(booking.createdAt)}',
-            ),
+            Text('${booking.status.label} · ${_formatDate(booking.createdAt)}'),
             if (showPayment) ...[
               const SizedBox(height: 4),
               _PaymentLine(booking: booking),
@@ -103,7 +99,7 @@ class _HistoryCard extends StatelessWidget {
         trailing: price == null
             ? null
             : Text(
-                formatIdr(price.total),
+                formatIdr(price.serviceTotal),
                 style: theme.textTheme.bodyMedium,
               ),
       ),

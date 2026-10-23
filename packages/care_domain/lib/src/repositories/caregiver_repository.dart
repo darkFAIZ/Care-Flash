@@ -34,10 +34,9 @@ abstract interface class CaregiverRepository {
 
   Future<void> signOut();
 
-  /// Submits student identity details for platform review. (FR-CM-2)
+  /// Submits caregiver identity details for platform review. (FR-CM-2)
   Future<void> submitVerification({
-    required String studentIdNumber,
-    required String university,
+    required String residentialIdNumber,
     required String documentLabel,
   });
 
@@ -54,7 +53,7 @@ abstract interface class CaregiverRepository {
   /// The request currently offered to this caregiver, or null. (FR-CM-7)
   ///
   /// Before the caregiver accepts, the platform withholds the care seeker
-  /// location and client code; those are only needed after acceptance.
+  /// location and verification code; these are only needed later.
   /// (FR-CM-8, DC-CM-2)
   Stream<Booking?> watchIncomingRequest();
 
@@ -79,11 +78,6 @@ abstract interface class CaregiverRepository {
 
   /// Marks the caregiver as arrived at the care seeker's location. (FR-CM-10)
   Future<void> markArrived();
-
-  /// Verifies the client code the care seeker presents on arrival. A wrong
-  /// code cancels the booking and notifies support; the session must not
-  /// start. (FR-CM-13, FR-CM-14)
-  Future<ButtonVerificationResult> verifyClientCode(String code);
 
   /// Marks the work complete and notifies the care seeker. (FR-CM-18)
   Future<void> completeSession();
@@ -139,6 +133,9 @@ abstract interface class CaregiverDemoControls {
   /// Simulates the care seeker cancelling the booking, which notifies the
   /// caregiver. (FR-CM-12)
   void simulateCareSeekerCancel();
+
+  /// Simulates the care seeker confirming the caregiver's spoken identity code.
+  void simulateCareSeekerCodeConfirmation({bool valid = true});
 
   /// Simulates the care seeker scanning or reading the safety button the
   /// caregiver handed over. The prototype has no camera or NFC reader.

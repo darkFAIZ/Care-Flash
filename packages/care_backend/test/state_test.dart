@@ -9,16 +9,15 @@ void main() {
   String onboardCaregiver({Gender gender = Gender.female}) {
     final auth = state.caregiverSignUp(
       name: 'Ayu Lestari',
-      email: 'ayu@campus.ac.id',
+      email: 'ayu@care.org',
       password: 'secret1',
       gender: gender,
     );
     final id = (auth['user'] as Map<String, Object?>)['id']! as String;
     state.submitVerification(
       id,
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
+      residentialIdNumber: '220001',
+      documentLabel: 'identity-card.jpg',
     );
     state.completeSafetyModule(id);
     state.updateAvailability(id, CaregiverAvailability.available);
@@ -26,20 +25,29 @@ void main() {
   }
 
   String signInSeeker() {
-    state.seekerSignUp(name: 'Sari', email: 'sari@campus.ac.id', password: 'secret1');
-    final auth = state.seekerSignIn(email: 'sari@campus.ac.id', password: 'secret1');
+    state.seekerSignUp(
+      name: 'Sari',
+      email: 'sari@care.org',
+      password: 'secret1',
+    );
+    final auth = state.seekerSignIn(
+      email: 'sari@care.org',
+      password: 'secret1',
+    );
     return (auth['user'] as Map<String, Object?>)['id']! as String;
   }
 
   Map<String, Object?> helpRequestArgs() => {
-        'helpType': HelpType.takeCare.name,
-        'description': 'Need company while I study.',
-        'checklist': BoundaryChecklist.suggested.toJson(),
-        'location': VisitLocation.mockPresets.first.toJson(),
-        'scheduledAt': DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
-        'duration': VisitDuration.sixty.name,
-        'genderFilter': GenderFilter.both.name,
-      };
+    'helpType': HelpType.takeCare.name,
+    'description': 'Need company while I study.',
+    'checklist': BoundaryChecklist.suggested.toJson(),
+    'location': VisitLocation.mockPresets.first.toJson(),
+    'scheduledAt': DateTime.now()
+        .add(const Duration(hours: 1))
+        .toIso8601String(),
+    'duration': VisitDuration.sixty.name,
+    'genderFilter': GenderFilter.both.name,
+  };
 
   setUp(() => state = CareBackendState());
 
@@ -53,43 +61,55 @@ void main() {
     expect((matched['caregiver'] as Map<String, Object?>?)?['id'], caregiverId);
 
     final bookingId = matched['id']! as String;
-    final clientCode = matched['clientCode'] as String?; // null until paid
+    expect(matched['clientCode'], isNull);
 
     // 2. The seeker pays; the request is then offered to the caregiver.
-    final payment =
-        state.pay(seekerId, bookingId, PaymentMethodType.gopay);
+    final payment = state.pay(seekerId, bookingId, PaymentMethodType.gopay);
     expect(payment['success'], true);
 
-    final caregiverOffer = state.caregiverSnapshot(caregiverId)['incomingRequest'];
+    final caregiverOffer = state.caregiverSnapshot(
+      caregiverId,
+    )['incomingRequest'];
     expect(caregiverOffer, isNotNull);
-    expect((caregiverOffer as Map<String, Object?>)['status'],
-        BookingStatus.paidPending.name);
+    expect(
+      (caregiverOffer as Map<String, Object?>)['status'],
+      BookingStatus.paidPending.name,
+    );
 
     // 3. The caregiver accepts and walks the session forward.
     state.acceptRequest(caregiverId);
     state.startTrip(caregiverId);
     state.markArrived(caregiverId);
 
-    final code = (state.caregiverSnapshot(caregiverId)['activeBooking']
-        as Map<String, Object?>)['clientCode']! as String;
-    final codeResult = state.verifyClientCode(caregiverId, code);
+    final code =
+        (state.caregiverSnapshot(caregiverId)['activeBooking']
+                as Map<String, Object?>)['clientCode']!
+            as String;
+    final seekerBooking =
+        state.seekerSnapshot(seekerId)['activeBooking'] as Map<String, Object?>;
+    expect(seekerBooking['clientCode'], isNull);
+    final codeResult = state.verifyCaregiverCode(seekerId, code);
     expect(codeResult['success'], true);
 
     // 4. The seeker verifies the physical safety button, starting the session.
-    final safetyButtonId = (state.seekerSnapshot(seekerId)['activeBooking']
-        as Map<String, Object?>)['safetyButtonId']! as String;
+    final safetyButtonId =
+        (state.seekerSnapshot(seekerId)['activeBooking']
+                as Map<String, Object?>)['safetyButtonId']!
+            as String;
     final buttonResult = state.verifySafetyButton(
       seekerId,
       ButtonVerification(
-          method: ButtonVerificationMethod.qr, payload: safetyButtonId),
+        method: ButtonVerificationMethod.qr,
+        payload: safetyButtonId,
+      ),
     );
     expect(buttonResult['success'], true);
-    expect(clientCode, isNull); // the local var was captured before payment
 
     // 5. The caregiver completes; earnings are credited.
     state.completeSession(caregiverId);
     final earnings =
-        state.caregiverSnapshot(caregiverId)['earnings'] as Map<String, Object?>;
+        state.caregiverSnapshot(caregiverId)['earnings']
+            as Map<String, Object?>;
     final earningsList = earnings['earnings']! as List<Object?>;
     expect(earningsList, isNotEmpty);
     final entry = earningsList.first! as Map<String, Object?>;
@@ -103,8 +123,9 @@ void main() {
       'stars': 5,
       'comment': 'Kind and punctual.',
     });
-    final feedback = state.caregiverSnapshot(caregiverId)['feedbackReceived']
-        as List<Object?>;
+    final feedback =
+        state.caregiverSnapshot(caregiverId)['feedbackReceived']
+            as List<Object?>;
     expect(feedback, isNotEmpty);
     expect((feedback.first! as Map<String, Object?>)['stars'], 5);
   });
@@ -113,7 +134,7 @@ void main() {
     // Caregiver signs up but never completes onboarding.
     final auth = state.caregiverSignUp(
       name: 'Budi',
-      email: 'budi@campus.ac.id',
+      email: 'budi@care.org',
       password: 'secret1',
       gender: Gender.male,
     );
@@ -129,8 +150,7 @@ void main() {
     onboardCaregiver(gender: Gender.female);
     final seekerId = signInSeeker();
 
-    final args = helpRequestArgs()
-      ..['genderFilter'] = GenderFilter.male.name;
+    final args = helpRequestArgs()..['genderFilter'] = GenderFilter.male.name;
     final result = state.submitRequest(seekerId, args);
     expect(result['status'], BookingStatus.noMatch.name);
   });
@@ -140,30 +160,28 @@ void main() {
     // a dead-end status screen, so signup must start unsubmitted. (FR-CM-2)
     final auth = state.caregiverSignUp(
       name: 'Budi',
-      email: 'budi@campus.ac.id',
+      email: 'budi@care.org',
       password: 'secret1',
       gender: Gender.male,
     );
     final caregiverId = (auth['user'] as Map<String, Object?>)['id']! as String;
-    expect(
-      state.caregiverSnapshot(caregiverId)['currentCaregiver'],
-      isNotNull,
-    );
+    expect(state.caregiverSnapshot(caregiverId)['currentCaregiver'], isNotNull);
     final fresh = CaregiverAccount.fromJson(
-      state.caregiverSnapshot(caregiverId)['currentCaregiver']! as Map<String, Object?>,
+      state.caregiverSnapshot(caregiverId)['currentCaregiver']!
+          as Map<String, Object?>,
     );
     expect(fresh.verificationStatus, VerificationStatus.notSubmitted);
 
-    // Submitting the student ID is auto-approved by the demo backend, so the
+    // Submitting the residential ID is auto-approved by the demo backend, so the
     // caregiver is never left stuck "under review".
     state.submitVerification(
       caregiverId,
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
+      residentialIdNumber: '220001',
+      documentLabel: 'identity-card.jpg',
     );
     final after = CaregiverAccount.fromJson(
-      state.caregiverSnapshot(caregiverId)['currentCaregiver']! as Map<String, Object?>,
+      state.caregiverSnapshot(caregiverId)['currentCaregiver']!
+          as Map<String, Object?>,
     );
     expect(after.verificationStatus, VerificationStatus.approved);
     expect(after.isVerified, isTrue);

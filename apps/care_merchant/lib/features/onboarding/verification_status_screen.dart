@@ -34,7 +34,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final message = switch (status) {
       VerificationStatus.pending =>
-        'Your student ID is being reviewed. This usually takes a short while. '
+        'Your identity card is being reviewed. This usually takes a short while. '
             'You will be able to receive requests once you are verified.',
       VerificationStatus.approved =>
         'You are verified. You can now complete the safety module and start '
@@ -42,7 +42,7 @@ class VerificationStatusScreen extends ConsumerWidget {
       VerificationStatus.rejected =>
         caregiver.rejectionReason ?? 'Your submission was not accepted.',
       VerificationStatus.notSubmitted =>
-        'You have not submitted your student ID yet.',
+        'You have not submitted your residential ID and identity card yet.',
     };
 
     return Scaffold(
@@ -73,15 +73,18 @@ class VerificationStatusScreen extends ConsumerWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (caregiver.university != null) ...[
+                  if (caregiver.residentialIdNumber != null || caregiver.identityCardLabel != null) ...[
                     const SizedBox(height: 24),
                     Card(
                       child: ListTile(
-                        leading: const Icon(Icons.school_outlined),
-                        title: Text(caregiver.university!),
-                        subtitle: caregiver.studentIdNumber == null
-                            ? null
-                            : Text('Student ID ${caregiver.studentIdNumber}'),
+                        leading: const Icon(Icons.badge_outlined),
+                        title: const Text('Identity details submitted'),
+                        subtitle: Text([
+                          if (caregiver.residentialIdNumber != null)
+                            'Residential ID ${caregiver.residentialIdNumber}',
+                          if (caregiver.identityCardLabel != null)
+                            'Identity card: ${caregiver.identityCardLabel}',
+                        ].join('\n')),
                       ),
                     ),
                   ],
@@ -101,7 +104,7 @@ class VerificationStatusScreen extends ConsumerWidget {
                       status == VerificationStatus.notSubmitted) ...[
                     FilledButton(
                       onPressed: () => context.go(OnboardingScreen.route),
-                      child: const Text('Resubmit your student ID'),
+                      child: const Text('Resubmit identity details'),
                     ),
                   ] else if (status == VerificationStatus.pending) ...[
                     // The review completes on its own; watch the caregiver so

@@ -149,7 +149,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text('Pay ${formatIdr(price.total)}'),
+                    : Text('Pay ${formatIdr(price.serviceTotal)}'),
               ),
             ],
           ),

@@ -41,10 +41,10 @@ enum GenderFilter {
 
   /// Whether a caregiver of [gender] matches this filter. (FR-P-4)
   bool matches(Gender gender) => switch (this) {
-        GenderFilter.male => gender == Gender.male,
-        GenderFilter.female => gender == Gender.female,
-        GenderFilter.both => true,
-      };
+    GenderFilter.male => gender == Gender.male,
+    GenderFilter.female => gender == Gender.female,
+    GenderFilter.both => true,
+  };
 }
 
 /// Supported visit durations. (FR-CS-6)
@@ -60,12 +60,12 @@ enum VisitDuration {
   final int minutes;
 
   String get label => switch (this) {
-        VisitDuration.thirty => '30 minutes',
-        VisitDuration.fortyFive => '45 minutes',
-        VisitDuration.sixty => '1 hour',
-        VisitDuration.ninety => '1.5 hours',
-        VisitDuration.oneHundredTwenty => '2 hours',
-      };
+    VisitDuration.thirty => '30 minutes',
+    VisitDuration.fortyFive => '45 minutes',
+    VisitDuration.sixty => '1 hour',
+    VisitDuration.ninety => '1.5 hours',
+    VisitDuration.oneHundredTwenty => '2 hours',
+  };
 }
 
 /// Lifecycle of a booking.
@@ -81,7 +81,7 @@ enum BookingStatus {
   confirmed('Caregiver confirmed'),
   caregiverTravelling('Caregiver on the way'),
   arrived('Caregiver arrived'),
-  codeVerified('Client code verified'),
+  codeVerified('Caregiver identity confirmed'),
   buttonVerified('Safety button verified'),
   active('Session in progress'),
   completed('Completed'),
@@ -96,14 +96,13 @@ enum BookingStatus {
 
   /// True while the booking is still being arranged or is in progress.
   bool get isOpen => switch (this) {
-        BookingStatus.completed ||
-        BookingStatus.endedEarly ||
-        BookingStatus.reported ||
-        BookingStatus.caregiverSos ||
-        BookingStatus.cancelled =>
-          false,
-        _ => true,
-      };
+    BookingStatus.completed ||
+    BookingStatus.endedEarly ||
+    BookingStatus.reported ||
+    BookingStatus.caregiverSos ||
+    BookingStatus.cancelled => false,
+    _ => true,
+  };
 
   /// True once the session has started. (FR-CS-14)
   bool get isSessionStarted =>
@@ -156,19 +155,16 @@ enum PaymentStatus {
   partiallyRefunded;
 
   String get label => switch (this) {
-        PaymentStatus.pending => 'Payment pending',
-        PaymentStatus.succeeded => 'Paid',
-        PaymentStatus.failed => 'Payment failed',
-        PaymentStatus.refunded => 'Refunded',
-        PaymentStatus.partiallyRefunded => 'Partly refunded',
-      };
+    PaymentStatus.pending => 'Payment pending',
+    PaymentStatus.succeeded => 'Paid',
+    PaymentStatus.failed => 'Payment failed',
+    PaymentStatus.refunded => 'Refunded',
+    PaymentStatus.partiallyRefunded => 'Partly refunded',
+  };
 }
 
 /// How the physical safety button is verified. (FR-CS-13, HI-CS-1)
-enum ButtonVerificationMethod {
-  qr,
-  nfc,
-}
+enum ButtonVerificationMethod { qr, nfc }
 
 /// Caregiver onboarding/verification status. (FR-CM-3)
 enum VerificationStatus {

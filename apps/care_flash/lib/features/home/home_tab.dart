@@ -114,23 +114,44 @@ class _NeedHelpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      color: theme.colorScheme.primaryContainer,
+    final scheme = theme.colorScheme;
+    final dark = scheme.brightness == Brightness.dark;
+    final foreground = dark ? scheme.onPrimaryContainer : scheme.onPrimary;
+    final start = dark ? scheme.primaryContainer : scheme.primary;
+    final end = dark
+        ? Color.lerp(scheme.primaryContainer, scheme.tertiary, .18)!
+        : const Color(0xFF075F58);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [start, end],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: .2),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               Icons.volunteer_activism_outlined,
               size: 36,
-              color: theme.colorScheme.onPrimaryContainer,
+              color: foreground,
             ),
             const SizedBox(height: 12),
             Text(
               'Need help?',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
+                color: foreground,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -138,12 +159,17 @@ class _NeedHelpCard extends StatelessWidget {
             Text(
               'Request a nearby verified caregiver for a short visit.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
+                color: foreground.withValues(alpha: .92),
               ),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: scheme.surface,
+                foregroundColor: scheme.primary,
+                elevation: 0,
+              ),
               icon: const Icon(Icons.add),
               label: const Text('Start a request'),
             ),

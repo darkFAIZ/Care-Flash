@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/phone_frame.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'core/providers.dart';
 
 /// Root widget for Care-Merchant. (AGENTS.md §5)
 class CareMerchantApp extends ConsumerWidget {
@@ -13,11 +15,20 @@ class CareMerchantApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final language = ref.watch(languageProvider);
     return MaterialApp.router(
       title: 'Care-Merchant',
       debugShowCheckedModeBanner: false,
       theme: CareMerchantTheme.light(),
       darkTheme: CareMerchantTheme.dark(),
+      themeMode: ref.watch(themeModeProvider),
+      locale: Locale(language.code),
+      supportedLocales: const [Locale('en'), Locale('id')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: router,
       // On the web (the Edge demo windows) keep the mobile aspect ratio; on a
       // phone/desktop window the app fills the screen as usual.

@@ -38,7 +38,7 @@ Future<void> _payForARequest(WidgetTester tester) async {
   await tester.tap(find.text('Next: schedule'));
   await tester.pumpAndSettle();
 
-  await tester.tap(find.text('Campus library'));
+  await tester.tap(find.text('Community library'));
   await tester.pumpAndSettle();
   await tester.ensureVisible(find.text('Date'));
   await tester.pumpAndSettle();

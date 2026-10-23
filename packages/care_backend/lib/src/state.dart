@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:care_domain/care_domain.dart';
 
 /// The single source of truth for the Care-Flash demo backend.
@@ -15,7 +18,7 @@ class CareBackendState {
   final Random _random;
   int _seq = 0;
 
-  // Demo-only credentials. Real builds use a proper auth provider.
+  // Prototype credentials are stored as salted PBKDF2 hashes, never plaintext.
   final Map<String, String> _seekerPasswords = {};
   final Map<String, String> _caregiverPasswords = {};
 
@@ -36,6 +39,180 @@ class CareBackendState {
   final Map<String, List<CaregiverRating>> _caregiverRatings = {};
   final List<AppFeedback> _appFeedback = [];
 
+  /// Serializes the complete shared platform state for durable storage.
+  Map<String, Object?> toJson() => {
+    'version': 1,
+    'sequence': _seq,
+    'seekerPasswords': _seekerPasswords,
+    'caregiverPasswords': _caregiverPasswords,
+    'seekers': _seekers.values.map((item) => item.toJson()).toList(),
+    'caregivers': _caregivers.values.map((item) => item.toJson()).toList(),
+    'bookings': _bookings.map((item) => item.toJson()).toList(),
+    'bookingSeeker': _bookingSeeker,
+    'earnings': _encodeLedger(_earnings, (item) => item.toJson()),
+    'withdrawals': _encodeLedger(_withdrawals, (item) => item.toJson()),
+    'feedbackReceived': _encodeLedger(
+      _feedbackReceived,
+      (item) => item.toJson(),
+    ),
+    'careSeekerRatings': _encodeLedger(
+      _careSeekerRatings,
+      (item) => item.toJson(),
+    ),
+    'caregiverRatings': _encodeLedger(
+      _caregiverRatings,
+      (item) => item.toJson(),
+    ),
+    'appFeedback': _appFeedback.map((item) => item.toJson()).toList(),
+  };
+
+  /// Restores a state document previously produced by [toJson].
+  void restoreFromJson(Map<String, Object?> json) {
+    if (json['version'] != 1) {
+      throw const FormatException('Unsupported Care-Flash data file version.');
+    }
+    _seq = json['sequence'] as int? ?? 0;
+    _replaceStringMap(_seekerPasswords, json['seekerPasswords']);
+    _replaceStringMap(_caregiverPasswords, json['caregiverPasswords']);
+    _seekers
+      ..clear()
+      ..addEntries(
+        _jsonList(json['seekers']).map((item) {
+          final account = CareSeeker.fromJson(item);
+          return MapEntry(account.id, account);
+        }),
+      );
+    _caregivers
+      ..clear()
+      ..addEntries(
+        _jsonList(json['caregivers']).map((item) {
+          final account = CaregiverAccount.fromJson(item);
+          return MapEntry(account.id, account);
+        }),
+      );
+    _bookings
+      ..clear()
+      ..addAll(_jsonList(json['bookings']).map(Booking.fromJson));
+    _replaceStringMap(_bookingSeeker, json['bookingSeeker']);
+    _restoreLedger(_earnings, json['earnings'], EarningEntry.fromJson);
+    _restoreLedger(_withdrawals, json['withdrawals'], Withdrawal.fromJson);
+    _restoreLedger(
+      _feedbackReceived,
+      json['feedbackReceived'],
+      FeedbackReceived.fromJson,
+    );
+    _restoreLedger(
+      _careSeekerRatings,
+      json['careSeekerRatings'],
+      CareSeekerRating.fromJson,
+    );
+    _restoreLedger(
+      _caregiverRatings,
+      json['caregiverRatings'],
+      CaregiverRating.fromJson,
+    );
+    _appFeedback
+      ..clear()
+      ..addAll(_jsonList(json['appFeedback']).map(AppFeedback.fromJson));
+  }
+
+  Map<String, List<Map<String, Object?>>> _encodeLedger<T>(
+    Map<String, List<T>> ledger,
+    Map<String, Object?> Function(T) encode,
+  ) => {
+    for (final entry in ledger.entries)
+      entry.key: entry.value.map(encode).toList(),
+  };
+
+  void _restoreLedger<T>(
+    Map<String, List<T>> target,
+    Object? value,
+    T Function(Map<String, Object?>) decode,
+  ) {
+    target
+      ..clear()
+      ..addAll({
+        for (final entry in (value as Map? ?? const {}).entries)
+          entry.key as String: _jsonList(entry.value).map(decode).toList(),
+      });
+  }
+
+  List<Map<String, Object?>> _jsonList(Object? value) =>
+      (value as List<Object?>? ?? const [])
+          .map((item) => Map<String, Object?>.from(item! as Map))
+          .toList();
+
+  void _replaceStringMap(Map<String, String> target, Object? value) {
+    target
+      ..clear()
+      ..addAll(
+        (value as Map? ?? const {}).map(
+          (key, item) => MapEntry(key as String, item as String),
+        ),
+      );
+  }
+
+  String _passwordRecord(String password) {
+    final secureRandom = Random.secure();
+    final salt = List<int>.generate(16, (_) => secureRandom.nextInt(256));
+    final saltHex = salt
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    final digest = _derivePassword(password, salt);
+    final digestHex = digest
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
+    return 'pbkdf2-sha256:120000:$saltHex:$digestHex';
+  }
+
+  bool _verifyPassword(String password, String? record) {
+    if (record == null) return false;
+    final parts = record.split(':');
+    if (parts.length != 4 || parts[0] != 'pbkdf2-sha256') return false;
+    final iterations = int.tryParse(parts[1]);
+    if (iterations == null || iterations < 100000 || iterations > 1000000) {
+      return false;
+    }
+    final salt = _decodeHex(parts[2]);
+    final expected = _decodeHex(parts[3]);
+    final actual = _derivePassword(password, salt, iterations: iterations);
+    if (actual.length != expected.length) return false;
+    var difference = 0;
+    for (var index = 0; index < actual.length; index++) {
+      difference |= actual[index] ^ expected[index];
+    }
+    return difference == 0;
+  }
+
+  List<int> _derivePassword(
+    String password,
+    List<int> salt, {
+    int iterations = 120000,
+  }) {
+    final hmac = Hmac(sha256, utf8.encode(password));
+    var block = hmac.convert([...salt, 0, 0, 0, 1]).bytes;
+    final result = Uint8List.fromList(block);
+    for (var round = 1; round < iterations; round++) {
+      block = hmac.convert(block).bytes;
+      for (var index = 0; index < result.length; index++) {
+        result[index] ^= block[index];
+      }
+    }
+    return result;
+  }
+
+  List<int> _decodeHex(String value) {
+    if (value.length.isOdd) return const [];
+    try {
+      return [
+        for (var index = 0; index < value.length; index += 2)
+          int.parse(value.substring(index, index + 2), radix: 16),
+      ];
+    } on FormatException {
+      return const [];
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -47,7 +224,7 @@ class CareBackendState {
     return List.generate(6, (_) => chars[_random.nextInt(chars.length)]).join();
   }
 
-  String _clientCode() => List.generate(4, (_) => _random.nextInt(10)).join();
+  String _clientCode() => List.generate(6, (_) => _random.nextInt(10)).join();
 
   String _safetyButtonId() => 'BTN-${_reference()}';
 
@@ -88,7 +265,8 @@ class CareBackendState {
   Booking? _caregiverOffer(String caregiverId) {
     for (var i = _bookings.length - 1; i >= 0; i--) {
       final b = _bookings[i];
-      if (b.caregiver?.id == caregiverId && b.status == BookingStatus.paidPending) {
+      if (b.caregiver?.id == caregiverId &&
+          b.status == BookingStatus.paidPending) {
         return b;
       }
     }
@@ -127,25 +305,39 @@ class CareBackendState {
     if (_seekers.values.any((s) => s.email == email)) {
       return _authFail('An account with that email already exists.');
     }
-    final seeker = CareSeeker(id: _newId('cs'), name: name.trim(), email: email.trim());
+    final seeker = CareSeeker(
+      id: _newId('cs'),
+      name: name.trim(),
+      email: email.trim(),
+    );
     _seekers[seeker.id] = seeker;
-    _seekerPasswords[email.trim()] = password;
+    _seekerPasswords[email.trim()] = _passwordRecord(password);
     return _authOk(seeker);
   }
 
-  Map<String, Object?> seekerSignIn({required String email, required String password}) {
+  Map<String, Object?> seekerSignIn({
+    required String email,
+    required String password,
+  }) {
     for (final s in _seekers.values) {
-      if (s.email == email && _seekerPasswords[email] == password) {
+      if (s.email == email &&
+          _verifyPassword(password, _seekerPasswords[email])) {
         return _authOk(s);
       }
     }
     return _authFail('Wrong email or password.');
   }
 
-  Map<String, Object?> _authOk(CareSeeker s) =>
-      {'success': true, 'user': s.toJson(), 'error': null};
-  Map<String, Object?> _authFail(String m) =>
-      {'success': false, 'user': null, 'error': m};
+  Map<String, Object?> _authOk(CareSeeker s) => {
+    'success': true,
+    'user': s.toJson(),
+    'error': null,
+  };
+  Map<String, Object?> _authFail(String m) => {
+    'success': false,
+    'user': null,
+    'error': m,
+  };
 
   // ---------------------------------------------------------------------------
   // Caregiver: auth + onboarding
@@ -176,35 +368,43 @@ class CareBackendState {
       verificationStatus: VerificationStatus.notSubmitted,
     );
     _caregivers[caregiver.id] = caregiver;
-    _caregiverPasswords[email.trim()] = password;
+    _caregiverPasswords[email.trim()] = _passwordRecord(password);
     return _caregiverAuthOk(caregiver);
   }
 
-  Map<String, Object?> caregiverSignIn({required String email, required String password}) {
+  Map<String, Object?> caregiverSignIn({
+    required String email,
+    required String password,
+  }) {
     for (final c in _caregivers.values) {
-      if (c.email == email && _caregiverPasswords[email] == password) {
+      if (c.email == email &&
+          _verifyPassword(password, _caregiverPasswords[email])) {
         return _caregiverAuthOk(c);
       }
     }
     return _caregiverAuthFail('Wrong email or password.');
   }
 
-  Map<String, Object?> _caregiverAuthOk(CaregiverAccount c) =>
-      {'success': true, 'user': c.toJson(), 'error': null};
-  Map<String, Object?> _caregiverAuthFail(String m) =>
-      {'success': false, 'user': null, 'error': m};
+  Map<String, Object?> _caregiverAuthOk(CaregiverAccount c) => {
+    'success': true,
+    'user': c.toJson(),
+    'error': null,
+  };
+  Map<String, Object?> _caregiverAuthFail(String m) => {
+    'success': false,
+    'user': null,
+    'error': m,
+  };
 
   void submitVerification(
     String caregiverId, {
-    required String studentIdNumber,
-    required String university,
+    required String residentialIdNumber,
     required String documentLabel,
   }) {
     final c = _requireCaregiver(caregiverId);
     _caregivers[c.id] = c.copyWith(
-      studentIdNumber: studentIdNumber,
-      university: university,
-      studentIdDocumentLabel: documentLabel,
+      residentialIdNumber: residentialIdNumber,
+      identityCardLabel: documentLabel,
       verificationSubmittedAt: DateTime.now(),
       verificationStatus: VerificationStatus.approved,
       rejectionReason: null,
@@ -221,7 +421,10 @@ class CareBackendState {
     _caregivers[caregiverId] = c.copyWith(gender: gender);
   }
 
-  void updateAvailability(String caregiverId, CaregiverAvailability availability) {
+  void updateAvailability(
+    String caregiverId,
+    CaregiverAvailability availability,
+  ) {
     final c = _requireCaregiver(caregiverId);
     _caregivers[caregiverId] = c.copyWith(availability: availability);
   }
@@ -230,12 +433,19 @@ class CareBackendState {
   // Care seeker: request lifecycle
   // ---------------------------------------------------------------------------
 
-  Map<String, Object?> submitRequest(String seekerId, Map<String, Object?> args) {
+  Map<String, Object?> submitRequest(
+    String seekerId,
+    Map<String, Object?> args,
+  ) {
     final request = HelpRequest(
       helpType: HelpType.values.byName(args['helpType']! as String),
       description: args['description'] as String?,
-      checklist: BoundaryChecklist.fromJson(args['checklist']! as Map<String, Object?>),
-      location: VisitLocation.fromJson(args['location']! as Map<String, Object?>),
+      checklist: BoundaryChecklist.fromJson(
+        args['checklist']! as Map<String, Object?>,
+      ),
+      location: VisitLocation.fromJson(
+        args['location']! as Map<String, Object?>,
+      ),
       scheduledAt: DateTime.parse(args['scheduledAt']! as String),
       duration: VisitDuration.values.byName(args['duration']! as String),
       genderFilter: GenderFilter.values.byName(args['genderFilter']! as String),
@@ -269,20 +479,26 @@ class CareBackendState {
     return _attemptMatch(booking.id).toJson();
   }
 
-  Map<String, Object?> retryWithGenderFilter(String seekerId, GenderFilter filter) {
+  Map<String, Object?> retryWithGenderFilter(
+    String seekerId,
+    GenderFilter filter,
+  ) {
     final booking = _openSeekerBooking(seekerId);
-    _replaceBooking(booking.copyWith(
-      genderFilter: filter,
-      status: BookingStatus.matching,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.matching,
-          message: 'Looking again for a ${filter.label.toLowerCase()} caregiver…',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        genderFilter: filter,
+        status: BookingStatus.matching,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.matching,
+            message:
+                'Looking again for a ${filter.label.toLowerCase()} caregiver…',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     return _attemptMatch(booking.id).toJson();
   }
 
@@ -296,35 +512,43 @@ class CareBackendState {
       }
     }
     if (match == null) {
-      _replaceBooking(booking.copyWith(
-        status: BookingStatus.noMatch,
+      _replaceBooking(
+        booking.copyWith(
+          status: BookingStatus.noMatch,
+          updates: [
+            ...booking.updates,
+            BookingUpdate(
+              status: BookingStatus.noMatch,
+              message: 'No caregiver is available right now.',
+              at: DateTime.now(),
+            ),
+          ],
+        ),
+      );
+      return _requireBooking(bookingId);
+    }
+    _replaceBooking(
+      booking.copyWith(
+        caregiver: match.toPublic(),
+        status: BookingStatus.matched,
         updates: [
           ...booking.updates,
           BookingUpdate(
-            status: BookingStatus.noMatch,
-            message: 'No caregiver is available right now.',
+            status: BookingStatus.matched,
+            message: '${match.firstName} is available to help.',
             at: DateTime.now(),
           ),
         ],
-      ));
-      return _requireBooking(bookingId);
-    }
-    _replaceBooking(booking.copyWith(
-      caregiver: match.toPublic(),
-      status: BookingStatus.matched,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.matched,
-          message: '${match.firstName} is available to help.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+      ),
+    );
     return _requireBooking(bookingId);
   }
 
-  Map<String, Object?> pay(String seekerId, String bookingId, PaymentMethodType type) {
+  Map<String, Object?> pay(
+    String seekerId,
+    String bookingId,
+    PaymentMethodType type,
+  ) {
     final booking = _requireBooking(bookingId);
     if (booking.status != BookingStatus.matched || booking.price == null) {
       throw StateError('This booking is not ready to be paid.');
@@ -334,41 +558,52 @@ class CareBackendState {
       type: type,
       displayLabel: type.label,
     );
-    _replaceBooking(booking.copyWith(
-      paymentMethod: method,
-      paymentStatus: PaymentStatus.succeeded,
-      clientCode: _clientCode(),
-      status: BookingStatus.paidPending,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.paidPending,
-          message: 'Paid. Waiting for the caregiver to accept.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        paymentMethod: method,
+        paymentStatus: PaymentStatus.succeeded,
+        status: BookingStatus.paidPending,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.paidPending,
+            message: 'Paid. Waiting for the caregiver to accept.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     // The paid request is now offered to the matched caregiver.
-    return {'success': true, 'status': PaymentStatus.succeeded.name, 'message': null};
+    return {
+      'success': true,
+      'status': PaymentStatus.succeeded.name,
+      'message': null,
+    };
   }
 
   void cancelBooking(String seekerId, CancellationReason reason) {
     final booking = _openSeekerBooking(seekerId);
     final refunded = booking.isPaid;
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.cancelled,
-      cancellationReason: reason,
-      paymentStatus: refunded ? PaymentStatus.refunded : booking.paymentStatus,
-      refundAmount: refunded ? booking.price?.total : booking.refundAmount,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.cancelled,
-          message: 'Booking cancelled${refunded ? ' and refunded' : ''}.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.cancelled,
+        cancellationReason: reason,
+        paymentStatus: refunded
+            ? PaymentStatus.refunded
+            : booking.paymentStatus,
+        refundAmount: refunded
+            ? booking.price?.serviceTotal
+            : booking.refundAmount,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.cancelled,
+            message: 'Booking cancelled${refunded ? ' and refunded' : ''}.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     _clearOfferIfAny(booking.id);
   }
 
@@ -381,25 +616,33 @@ class CareBackendState {
     ButtonVerification verification,
   ) {
     final booking = _openSeekerBooking(seekerId);
-    if (booking.status != BookingStatus.arrived &&
-        booking.status != BookingStatus.codeVerified) {
-      return {'success': false, 'message': 'The caregiver has not arrived yet.'};
+    if (booking.status != BookingStatus.codeVerified) {
+      return {
+        'success': false,
+        'message':
+            'Confirm the caregiver code before scanning the safety button.',
+      };
     }
     final expected = booking.safetyButtonId;
     if (expected == null || verification.payload != expected) {
-      return {'success': false, 'message': 'That does not match this visit’s safety button.'};
+      return {
+        'success': false,
+        'message': 'That does not match this visit’s safety button.',
+      };
     }
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.active,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.active,
-          message: 'Safety button verified. Session started.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.active,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.active,
+            message: 'Safety button verified. Session started.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     return {'success': true, 'message': null};
   }
 
@@ -408,41 +651,49 @@ class CareBackendState {
     if (booking.price == null) return;
     final compensation = Pricing.earlyEndCompensation(booking.price!);
     final refund = Pricing.earlyEndRefund(booking.price!);
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.endedEarly,
-      outcome: SessionOutcome.endedEarly,
-      paymentStatus: PaymentStatus.partiallyRefunded,
-      refundAmount: refund,
-      caregiverPayout: compensation,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.endedEarly,
-          message: 'Session ended early. Partly refunded.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.endedEarly,
+        outcome: SessionOutcome.endedEarly,
+        paymentStatus: PaymentStatus.partiallyRefunded,
+        refundAmount: refund,
+        caregiverPayout: compensation,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.endedEarly,
+            message: 'Session ended early. Partly refunded.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     _creditEarning(booking, EarningKind.earlyEndCompensation, compensation);
   }
 
   void reportIncident(String seekerId, IncidentReport report) {
     final booking = _requireBooking(report.bookingId);
     final refunded = booking.isPaid;
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.reported,
-      outcome: SessionOutcome.careSeekerReported,
-      paymentStatus: refunded ? PaymentStatus.refunded : booking.paymentStatus,
-      refundAmount: refunded ? booking.price?.total : booking.refundAmount,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.reported,
-          message: 'Incident reported. Support has been notified.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.reported,
+        outcome: SessionOutcome.careSeekerReported,
+        paymentStatus: refunded
+            ? PaymentStatus.refunded
+            : booking.paymentStatus,
+        refundAmount: refunded
+            ? booking.price?.serviceTotal
+            : booking.refundAmount,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.reported,
+            message: 'Incident reported. Support has been notified.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
   }
 
   void rateCaregiver(String seekerId, Map<String, Object?> args) {
@@ -457,7 +708,9 @@ class CareBackendState {
     // Surface the feedback to the caregiver. (FR-CM-23)
     final caregiverId = booking.caregiver?.id;
     if (caregiverId != null) {
-      _feedbackReceived.putIfAbsent(caregiverId, () => []).insert(
+      _feedbackReceived
+          .putIfAbsent(caregiverId, () => [])
+          .insert(
             0,
             FeedbackReceived(
               bookingId: booking.id,
@@ -471,10 +724,12 @@ class CareBackendState {
   }
 
   void submitAppFeedback(Map<String, Object?> args) {
-    _appFeedback.add(AppFeedback(
-      stars: args['stars']! as int,
-      comment: args['comment'] as String?,
-    ));
+    _appFeedback.add(
+      AppFeedback(
+        stars: args['stars']! as int,
+        comment: args['comment'] as String?,
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -484,91 +739,119 @@ class CareBackendState {
   void acceptRequest(String caregiverId) {
     final offer = _caregiverOffer(caregiverId);
     if (offer == null) throw StateError('There is no request to accept.');
-    _replaceBooking(offer.copyWith(
-      status: BookingStatus.confirmed,
-      safetyButtonId: _safetyButtonId(),
-      updates: [
-        ...offer.updates,
-        BookingUpdate(
-          status: BookingStatus.confirmed,
-          message: 'Caregiver confirmed.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      offer.copyWith(
+        status: BookingStatus.confirmed,
+        safetyButtonId: _safetyButtonId(),
+        clientCode: _clientCode(),
+        updates: [
+          ...offer.updates,
+          BookingUpdate(
+            status: BookingStatus.confirmed,
+            message: 'Caregiver confirmed.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
   }
 
   void declineRequest(String caregiverId) {
     final offer = _caregiverOffer(caregiverId);
     if (offer == null) return;
     // Offer the request to the next eligible caregiver.
-    _replaceBooking(offer.copyWith(caregiver: null, status: BookingStatus.matching));
+    _replaceBooking(
+      offer.copyWith(caregiver: null, status: BookingStatus.matching),
+    );
     _attemptMatch(offer.id);
   }
 
   void reportDanger(String caregiverId, String description) {
     final offer = _caregiverOffer(caregiverId);
     if (offer == null) return;
-    _replaceBooking(offer.copyWith(
-      status: BookingStatus.cancelled,
-      cancellationReason: CancellationReason.preSessionDanger,
-      updates: [
-        ...offer.updates,
-        BookingUpdate(
-          status: BookingStatus.cancelled,
-          message: 'Booking cancelled over a safety concern.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      offer.copyWith(
+        status: BookingStatus.cancelled,
+        cancellationReason: CancellationReason.preSessionDanger,
+        updates: [
+          ...offer.updates,
+          BookingUpdate(
+            status: BookingStatus.cancelled,
+            message: 'Booking cancelled over a safety concern.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
   }
 
-  void startTrip(String caregiverId) => _advance(caregiverId, BookingStatus.caregiverTravelling,
-      'Caregiver is on the way.');
+  void startTrip(String caregiverId) => _advance(
+    caregiverId,
+    BookingStatus.caregiverTravelling,
+    'Caregiver is on the way.',
+  );
 
   void markArrived(String caregiverId) =>
       _advance(caregiverId, BookingStatus.arrived, 'Caregiver has arrived.');
 
   void _advance(String caregiverId, BookingStatus status, String message) {
-    final booking = _caregiverActive(caregiverId) ?? _caregiverOffer(caregiverId);
-    if (booking == null) throw StateError('No active booking for this caregiver.');
-    _replaceBooking(booking.copyWith(
-      status: status,
-      updates: [...booking.updates, BookingUpdate(status: status, message: message, at: DateTime.now())],
-    ));
+    final booking =
+        _caregiverActive(caregiverId) ?? _caregiverOffer(caregiverId);
+    if (booking == null) {
+      throw StateError('No active booking for this caregiver.');
+    }
+    _replaceBooking(
+      booking.copyWith(
+        status: status,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(status: status, message: message, at: DateTime.now()),
+        ],
+      ),
+    );
   }
 
-  Map<String, Object?> verifyClientCode(String caregiverId, String code) {
-    final booking = _caregiverActive(caregiverId) ?? _caregiverOffer(caregiverId);
-    if (booking == null) {
-      return {'success': false, 'message': 'No active booking.'};
+  Map<String, Object?> verifyCaregiverCode(String seekerId, String code) {
+    final booking = _openSeekerBooking(seekerId);
+    if (booking.status != BookingStatus.arrived) {
+      return {
+        'success': false,
+        'message': 'Wait until your caregiver has arrived.',
+      };
     }
-    if (booking.clientCode != code) {
-      _replaceBooking(booking.copyWith(
-        status: BookingStatus.cancelled,
-        cancellationReason: CancellationReason.failedVerification,
+    if (booking.clientCode != code.trim()) {
+      _replaceBooking(
+        booking.copyWith(
+          status: BookingStatus.cancelled,
+          cancellationReason: CancellationReason.failedVerification,
+          updates: [
+            ...booking.updates,
+            BookingUpdate(
+              status: BookingStatus.cancelled,
+              message: 'Caregiver verification failed. Booking cancelled.',
+              at: DateTime.now(),
+            ),
+          ],
+        ),
+      );
+      return {
+        'success': false,
+        'message': 'The code did not match. The booking was cancelled.',
+      };
+    }
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.codeVerified,
         updates: [
           ...booking.updates,
           BookingUpdate(
-            status: BookingStatus.cancelled,
-            message: 'Wrong client code. Booking cancelled.',
+            status: BookingStatus.codeVerified,
+            message: 'Caregiver identity confirmed by the care seeker.',
             at: DateTime.now(),
           ),
         ],
-      ));
-      return {'success': false, 'message': 'Wrong client code. Booking cancelled.'};
-    }
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.codeVerified,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.codeVerified,
-          message: 'Client code verified.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+      ),
+    );
     return {'success': true, 'message': null};
   }
 
@@ -578,19 +861,21 @@ class CareBackendState {
       throw StateError('No running session to complete.');
     }
     final earnings = Pricing.caregiverEarnings(booking.price!);
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.completed,
-      outcome: SessionOutcome.completed,
-      caregiverPayout: earnings,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.completed,
-          message: 'Session complete. Thank you!',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.completed,
+        outcome: SessionOutcome.completed,
+        caregiverPayout: earnings,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.completed,
+            message: 'Session complete. Thank you!',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     _creditEarning(booking, EarningKind.session, earnings);
   }
 
@@ -598,51 +883,63 @@ class CareBackendState {
     final booking = _caregiverActive(caregiverId);
     if (booking == null || booking.price == null) return;
     final compensation = Pricing.sosCompensation(booking.price!);
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.caregiverSos,
-      outcome: SessionOutcome.caregiverSos,
-      caregiverPayout: compensation,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.caregiverSos,
-          message: 'SOS raised. Emergency contacts and support notified.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.caregiverSos,
+        outcome: SessionOutcome.caregiverSos,
+        caregiverPayout: compensation,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.caregiverSos,
+            message: 'SOS raised. Emergency contacts and support notified.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
     _creditEarning(booking, EarningKind.sosCompensation, compensation);
   }
 
   void reportCareSeeker(String caregiverId, IncidentReport report) {
     final booking = _requireBooking(report.bookingId);
-    _replaceBooking(booking.copyWith(
-      status: BookingStatus.reported,
-      updates: [
-        ...booking.updates,
-        BookingUpdate(
-          status: BookingStatus.reported,
-          message: 'Report filed with support.',
-          at: DateTime.now(),
-        ),
-      ],
-    ));
+    _replaceBooking(
+      booking.copyWith(
+        status: BookingStatus.reported,
+        updates: [
+          ...booking.updates,
+          BookingUpdate(
+            status: BookingStatus.reported,
+            message: 'Report filed with support.',
+            at: DateTime.now(),
+          ),
+        ],
+      ),
+    );
   }
 
   void rateCareSeeker(String caregiverId, Map<String, Object?> args) {
     final booking = _requireBooking(args['bookingId']! as String);
-    _careSeekerRatings.putIfAbsent(caregiverId, () => []).add(CareSeekerRating(
-      bookingId: booking.id,
-      reference: args['reference']! as String,
-      stars: args['stars']! as int,
-      comment: args['comment'] as String?,
-    ));
+    _careSeekerRatings
+        .putIfAbsent(caregiverId, () => [])
+        .add(
+          CareSeekerRating(
+            bookingId: booking.id,
+            reference: args['reference']! as String,
+            stars: args['stars']! as int,
+            comment: args['comment'] as String?,
+          ),
+        );
   }
 
   Map<String, Object?> requestWithdrawal(String caregiverId, int amount) {
     final summary = _earningsSummary(caregiverId);
     if (amount <= 0 || amount % 1 != 0) {
-      return {'success': false, 'amount': 0, 'message': 'Enter a whole amount.'};
+      return {
+        'success': false,
+        'amount': 0,
+        'message': 'Enter a whole amount.',
+      };
     }
     if (amount < PlatformPolicy.minimumWithdrawal) {
       return {
@@ -652,9 +949,15 @@ class CareBackendState {
       };
     }
     if (amount > summary.availableBalance) {
-      return {'success': false, 'amount': 0, 'message': 'Amount exceeds your available balance.'};
+      return {
+        'success': false,
+        'amount': 0,
+        'message': 'Amount exceeds your available balance.',
+      };
     }
-    _withdrawals.putIfAbsent(caregiverId, () => []).insert(
+    _withdrawals
+        .putIfAbsent(caregiverId, () => [])
+        .insert(
           0,
           Withdrawal(
             id: _newId('wd'),
@@ -669,7 +972,9 @@ class CareBackendState {
   void _creditEarning(Booking booking, EarningKind kind, int amount) {
     final caregiverId = booking.caregiver?.id;
     if (caregiverId == null) return;
-    _earnings.putIfAbsent(caregiverId, () => []).insert(
+    _earnings
+        .putIfAbsent(caregiverId, () => [])
+        .insert(
           0,
           EarningEntry(
             id: _newId('earn'),
@@ -685,9 +990,11 @@ class CareBackendState {
   EarningsSummary _earningsSummary(String caregiverId) {
     final pending = _caregiverActive(caregiverId);
     final pendingAmount =
-        (pending != null && pending.status == BookingStatus.active && pending.price != null)
-            ? Pricing.caregiverEarnings(pending.price!)
-            : 0;
+        (pending != null &&
+            pending.status == BookingStatus.active &&
+            pending.price != null)
+        ? Pricing.caregiverEarnings(pending.price!)
+        : 0;
     return EarningsSummary(
       earnings: _earnings[caregiverId] ?? const [],
       withdrawals: _withdrawals[caregiverId] ?? const [],
@@ -714,8 +1021,10 @@ class CareBackendState {
     }
     return {
       'currentUser': seeker?.toJson(),
-      'activeBooking': active?.toJson(),
-      'bookingHistory': history.map((b) => b.toJson()).toList(),
+      'activeBooking': active?.copyWith(clientCode: null).toJson(),
+      'bookingHistory': history
+          .map((b) => b.copyWith(clientCode: null).toJson())
+          .toList(),
     };
   }
 
@@ -735,14 +1044,24 @@ class CareBackendState {
     }
     return {
       'currentCaregiver': caregiver?.toJson(),
-      'incomingRequest': _caregiverOffer(caregiverId)?.toJson(),
-      'activeBooking': active?.toJson(),
+      'incomingRequest': _caregiverOffer(
+        caregiverId,
+      )?.copyWith(clientCode: null).toJson(),
+      'activeBooking': active
+          ?.copyWith(
+            clientCode: active.status == BookingStatus.arrived
+                ? active.clientCode
+                : null,
+          )
+          .toJson(),
       'bookingHistory': history.map((b) => b.toJson()).toList(),
       'earnings': _earningsSummary(caregiverId).toJson(),
-      'feedbackReceived':
-          (_feedbackReceived[caregiverId] ?? const []).map((f) => f.toJson()).toList(),
-      'careSeekerRatings':
-          (_careSeekerRatings[caregiverId] ?? const []).map((r) => r.toJson()).toList(),
+      'feedbackReceived': (_feedbackReceived[caregiverId] ?? const [])
+          .map((f) => f.toJson())
+          .toList(),
+      'careSeekerRatings': (_careSeekerRatings[caregiverId] ?? const [])
+          .map((r) => r.toJson())
+          .toList(),
     };
   }
 }

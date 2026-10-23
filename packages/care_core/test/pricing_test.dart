@@ -30,14 +30,17 @@ void main() {
 
     test('total is caregiver price + platform fee + Grab fare', () {
       final price = Pricing.breakdown(VisitDuration.ninety);
-      expect(price.total, price.caregiverPrice + price.platformFee + price.grabFare);
+      expect(
+        price.total,
+        price.caregiverPrice + price.platformFee + price.grabFare,
+      );
     });
   });
 
   group('Pricing.earlyEndCompensation', () {
-    test('is 50 percent of the quoted total', () {
+    test('is 50 percent of the in-app service charge', () {
       final price = Pricing.breakdown(VisitDuration.sixty);
-      expect(Pricing.earlyEndCompensation(price), 30750);
+      expect(Pricing.earlyEndCompensation(price), 26250);
     });
   });
 
@@ -49,13 +52,13 @@ void main() {
   });
 
   group('Pricing.earlyEndRefund', () {
-    test('returns the unused part of the quoted total', () {
+    test('returns the unused part of the in-app service charge', () {
       final price = Pricing.breakdown(VisitDuration.sixty);
       expect(
         Pricing.earlyEndRefund(price),
-        price.total - Pricing.earlyEndCompensation(price),
+        price.serviceTotal - Pricing.earlyEndCompensation(price),
       );
-      expect(Pricing.earlyEndRefund(price), 30750);
+      expect(Pricing.earlyEndRefund(price), 26250);
     });
   });
 
@@ -74,7 +77,10 @@ void main() {
   group('PlatformPolicy', () {
     test('provides the AGENTS.md §7 defaults', () {
       expect(PlatformPolicy.defaultGenderFilter, GenderFilter.both);
-      expect(PlatformPolicy.caregiverResponseTimeout, const Duration(seconds: 60));
+      expect(
+        PlatformPolicy.caregiverResponseTimeout,
+        const Duration(seconds: 60),
+      );
       expect(PlatformPolicy.matchingRadiusKm, 5);
       expect(Pricing.estimateGrabFare(VisitDuration.sixty), 9000);
     });

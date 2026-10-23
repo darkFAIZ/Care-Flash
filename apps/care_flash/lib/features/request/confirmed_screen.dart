@@ -1,7 +1,6 @@
 import 'package:care_core/care_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,9 +8,9 @@ import '../../core/date_time_format.dart';
 import '../../core/providers.dart';
 import '../demo/demo_controls_sheet.dart';
 import '../home/home_shell.dart';
+import 'caregiver_code_screen.dart';
 
-/// Booking status after payment, together with the private client code the care
-/// seeker shows on arrival. (FR-CS-12, FR-CS-21)
+/// Booking status after payment and care seeker ride coordination.
 class ConfirmedScreen extends ConsumerWidget {
   const ConfirmedScreen({super.key});
 
@@ -60,9 +59,11 @@ class ConfirmedScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           _StatusHeader(booking: booking),
-          if (booking.hasClientCode) ...[
+          if (booking.status == BookingStatus.confirmed ||
+              booking.status == BookingStatus.caregiverTravelling ||
+              booking.status == BookingStatus.arrived) ...[
             const SizedBox(height: 16),
-            _ClientCodeCard(code: booking.clientCode!),
+            _GrabRideCard(status: booking.status),
           ],
           if (booking.caregiver != null) ...[
             const SizedBox(height: 16),
@@ -92,6 +93,14 @@ class ConfirmedScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
               ],
+              if (booking.status == BookingStatus.arrived) ...[
+                FilledButton.icon(
+                  onPressed: () => context.push(CaregiverCodeScreen.route),
+                  icon: const Icon(Icons.verified_user_outlined),
+                  label: const Text('Confirm caregiver identity'),
+                ),
+                const SizedBox(height: 8),
+              ],
               OutlinedButton(
                 onPressed: () => context.go(HomeShell.route),
                 child: const Text('Back home'),
@@ -105,14 +114,14 @@ class ConfirmedScreen extends ConsumerWidget {
 }
 
 IconData _statusIcon(BookingStatus status) => switch (status) {
-      BookingStatus.cancelled => Icons.cancel_outlined,
-      BookingStatus.completed => Icons.check_circle_outline,
-      BookingStatus.endedEarly => Icons.timer_off_outlined,
-      BookingStatus.reported => Icons.report_outlined,
-      BookingStatus.caregiverSos => Icons.sos_outlined,
-      BookingStatus.active => Icons.directions_run,
-      _ => Icons.schedule,
-    };
+  BookingStatus.cancelled => Icons.cancel_outlined,
+  BookingStatus.completed => Icons.check_circle_outline,
+  BookingStatus.endedEarly => Icons.timer_off_outlined,
+  BookingStatus.reported => Icons.report_outlined,
+  BookingStatus.caregiverSos => Icons.sos_outlined,
+  BookingStatus.active => Icons.directions_run,
+  _ => Icons.schedule,
+};
 
 class _StatusHeader extends StatelessWidget {
   const _StatusHeader({required this.booking});
@@ -169,56 +178,49 @@ class _StatusHeader extends StatelessWidget {
   }
 }
 
-class _ClientCodeCard extends StatelessWidget {
-  const _ClientCodeCard({required this.code});
+class _GrabRideCard extends StatelessWidget {
+  const _GrabRideCard({required this.status});
 
-  final String code;
+  final BookingStatus status;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final arrived = status == BookingStatus.arrived;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.pin_outlined, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Your client code', style: theme.textTheme.titleMedium),
+                Icon(
+                  Icons.local_taxi_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Your Grab ride',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                Icon(
+                  arrived ? Icons.check_circle : Icons.schedule,
+                  color: arrived
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              code,
-              style: theme.textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: 6,
-              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Show this code to your caregiver when they arrive. Do not share '
-              'it before then.',
-              style: theme.textTheme.bodySmall?.copyWith(
+              arrived
+                  ? 'Your caregiver has arrived. Confirm their identity before starting the visit.'
+                  : 'You order and pay for the caregiver’s ride directly in Grab. Ride ordering and live status are not connected in this demo.',
+              style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: code));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Client code copied')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.copy),
-                label: const Text('Copy'),
               ),
             ),
           ],
@@ -271,7 +273,17 @@ class _BookingDetails extends StatelessWidget {
             _row(context, 'When', formatVisitTime(booking.scheduledAt)),
             _row(context, 'Duration', booking.duration.label),
             if (booking.price != null)
-              _row(context, 'Total', formatIdr(booking.price!.total)),
+              _row(
+                context,
+                'Paid in Care-Flash',
+                formatIdr(booking.price!.serviceTotal),
+              ),
+            if (booking.price != null)
+              _row(
+                context,
+                'Grab ride (pay in Grab)',
+                formatIdr(booking.price!.grabFare),
+              ),
           ],
         ),
       ),
@@ -336,11 +348,12 @@ class _Timeline extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(update.status.label,
-                          style: theme.textTheme.titleSmall),
+                      Text(
+                        update.status.label,
+                        style: theme.textTheme.titleSmall,
+                      ),
                       const SizedBox(height: 2),
-                      Text(update.message,
-                          style: theme.textTheme.bodySmall),
+                      Text(update.message, style: theme.textTheme.bodySmall),
                       const SizedBox(height: 2),
                       Text(
                         formatClock(update.at),

@@ -30,7 +30,7 @@ abstract interface class DemoControls {
   /// Simulates the caregiver arriving. (FR-CS-21)
   void simulateCaregiverArrival();
 
-  /// Simulates the caregiver verifying (or failing) the client code.
+  /// Simulates the care seeker confirming (or rejecting) the caregiver code.
   /// (FR-P-16, FR-P-19)
   void simulateCaregiverCodeVerification({bool valid = true});
 

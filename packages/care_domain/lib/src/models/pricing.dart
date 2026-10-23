@@ -20,15 +20,19 @@ class PriceBreakdown {
   /// Caregiver price + platform fee + Grab fare. (FR-P-11)
   int get total => caregiverPrice + platformFee + grabFare;
 
+  /// Amount paid in Care-Flash. The care seeker pays the Grab fare directly
+  /// in Grab, so it is excluded from this app's checkout.
+  int get serviceTotal => caregiverPrice + platformFee;
+
   Map<String, Object?> toJson() => {
-        'caregiverPrice': caregiverPrice,
-        'platformFee': platformFee,
-        'grabFare': grabFare,
-      };
+    'caregiverPrice': caregiverPrice,
+    'platformFee': platformFee,
+    'grabFare': grabFare,
+  };
 
   factory PriceBreakdown.fromJson(Map<String, Object?> json) => PriceBreakdown(
-        caregiverPrice: json['caregiverPrice']! as int,
-        platformFee: json['platformFee']! as int,
-        grabFare: json['grabFare']! as int,
-      );
+    caregiverPrice: json['caregiverPrice']! as int,
+    platformFee: json['platformFee']! as int,
+    grabFare: json['grabFare']! as int,
+  );
 }

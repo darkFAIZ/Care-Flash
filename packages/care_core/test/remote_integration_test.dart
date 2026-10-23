@@ -19,13 +19,13 @@ Future<void> waitUntil(bool Function() condition, {String? reason}) async {
 }
 
 HelpRequest helpRequest() => HelpRequest(
-      helpType: HelpType.takeCare,
-      description: 'Company while I study.',
-      checklist: BoundaryChecklist.suggested,
-      location: VisitLocation.mockPresets.first,
-      scheduledAt: DateTime.now().add(const Duration(hours: 1)),
-      duration: VisitDuration.sixty,
-    );
+  helpType: HelpType.takeCare,
+  description: 'Company while I study.',
+  checklist: BoundaryChecklist.suggested,
+  location: VisitLocation.mockPresets.first,
+  scheduledAt: DateTime.now().add(const Duration(hours: 1)),
+  duration: VisitDuration.sixty,
+);
 
 void main() {
   late CareBackendServer server;
@@ -61,7 +61,9 @@ void main() {
     feedback = const [];
 
     // Persistent listeners so no pushed snapshot is missed.
-    caregiver.watchCurrentCaregiver().listen((value) => caregiverAccount = value);
+    caregiver.watchCurrentCaregiver().listen(
+      (value) => caregiverAccount = value,
+    );
     caregiver.watchIncomingRequest().listen((value) => caregiverOffer = value);
     caregiver.watchActiveBooking().listen((value) => caregiverActive = value);
     caregiver.watchEarnings().listen((value) => earnings = value);
@@ -78,101 +80,116 @@ void main() {
     await server.stop();
   });
 
-  test('a live request flows from Care-Flash to Care-Merchant and back', () async {
-    final caregiverAuth = await caregiver.signUp(
-      name: 'Ayu Lestari',
-      email: 'ayu@campus.ac.id',
-      password: 'secret1',
-      gender: Gender.female,
-    );
-    expect(caregiverAuth.success, isTrue);
-    final caregiverId = caregiverAuth.user!.id;
+  test(
+    'a live request flows from Care-Flash to Care-Merchant and back',
+    () async {
+      final caregiverAuth = await caregiver.signUp(
+        name: 'Ayu Lestari',
+        email: 'ayu@care.org',
+        password: 'secret1',
+        gender: Gender.female,
+      );
+      expect(caregiverAuth.success, isTrue);
+      final caregiverId = caregiverAuth.user!.id;
 
-    await caregiver.submitVerification(
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
-    );
-    await caregiver.completeSafetyModule();
-    await caregiver.updateAvailability(CaregiverAvailability.available);
-    await waitUntil(
-      () => caregiverAccount?.canReceiveRequests == true,
-      reason: 'the caregiver to be available',
-    );
+      await caregiver.submitVerification(
+        residentialIdNumber: '220001',
+        documentLabel: 'identity-card.jpg',
+      );
+      await caregiver.completeSafetyModule();
+      await caregiver.updateAvailability(CaregiverAvailability.available);
+      await waitUntil(
+        () => caregiverAccount?.canReceiveRequests == true,
+        reason: 'the caregiver to be available',
+      );
 
-    final seekerAuth =
-        await seeker.signUp(name: 'Sari', email: 'sari@campus.ac.id', password: 'secret1');
-    expect(seekerAuth.success, isTrue);
+      final seekerAuth = await seeker.signUp(
+        name: 'Sari',
+        email: 'sari@care.org',
+        password: 'secret1',
+      );
+      expect(seekerAuth.success, isTrue);
 
-    final booking = await seeker.submitRequest(helpRequest());
-    expect(booking.status, BookingStatus.matched);
-    expect(booking.caregiver?.id, caregiverId);
+      final booking = await seeker.submitRequest(helpRequest());
+      expect(booking.status, BookingStatus.matched);
+      expect(booking.caregiver?.id, caregiverId);
 
-    final payment =
-        await seeker.pay(bookingId: booking.id, method: MockData.paymentMethods.first);
-    expect(payment.success, isTrue);
-    await waitUntil(
-      () => caregiverOffer?.status == BookingStatus.paidPending,
-      reason: 'the request to reach the caregiver',
-    );
-    final clientCode = caregiverOffer!.clientCode!;
-
-    await caregiver.acceptRequest();
-    await waitUntil(
-      () => caregiverActive?.status == BookingStatus.confirmed,
-      reason: 'the caregiver to accept',
-    );
-
-    await caregiver.startTrip();
-    await waitUntil(() => caregiverActive?.status == BookingStatus.caregiverTravelling);
-    await caregiver.markArrived();
-    await waitUntil(() => caregiverActive?.status == BookingStatus.arrived);
-
-    final codeResult = await caregiver.verifyClientCode(clientCode);
-    expect(codeResult.success, isTrue);
-    await waitUntil(
-      () => seekerActive?.status == BookingStatus.codeVerified,
-      reason: 'the care seeker to see the verified code',
-    );
-
-    final safetyButtonId = seekerActive!.safetyButtonId!;
-    final button = await seeker.verifySafetyButton(
-      ButtonVerification(
-        method: ButtonVerificationMethod.qr,
-        payload: safetyButtonId,
-      ),
-    );
-    expect(button.success, isTrue);
-    await waitUntil(
-      () => caregiverActive?.status == BookingStatus.active,
-      reason: 'the session to start',
-    );
-
-    await caregiver.completeSession();
-    await waitUntil(
-      () => earnings?.earnings.isNotEmpty == true,
-      reason: 'earnings to be credited',
-    );
-    expect(earnings!.availableBalance, greaterThan(0));
-    expect(earnings!.earnings.first.kind, EarningKind.session);
-
-    await seeker.rateCaregiver(
-      CaregiverRating(
+      final payment = await seeker.pay(
         bookingId: booking.id,
-        caregiverId: caregiverId,
-        stars: 5,
-        comment: 'Kind and punctual.',
-      ),
-    );
-    await waitUntil(
-      () => feedback.isNotEmpty,
-      reason: 'the rating to reach the caregiver',
-    );
-    expect(feedback.first.stars, 5);
-  });
+        method: MockData.paymentMethods.first,
+      );
+      expect(payment.success, isTrue);
+      await waitUntil(
+        () => caregiverOffer?.status == BookingStatus.paidPending,
+        reason: 'the request to reach the caregiver',
+      );
+      expect(caregiverOffer!.clientCode, isNull);
+
+      await caregiver.acceptRequest();
+      await waitUntil(
+        () => caregiverActive?.status == BookingStatus.confirmed,
+        reason: 'the caregiver to accept',
+      );
+
+      await caregiver.startTrip();
+      await waitUntil(
+        () => caregiverActive?.status == BookingStatus.caregiverTravelling,
+      );
+      await caregiver.markArrived();
+      await waitUntil(() => caregiverActive?.status == BookingStatus.arrived);
+
+      final codeResult = await seeker.verifyCaregiverCode(
+        caregiverActive!.clientCode!,
+      );
+      expect(codeResult.success, isTrue);
+      await waitUntil(
+        () => seekerActive?.status == BookingStatus.codeVerified,
+        reason: 'the care seeker to see the verified code',
+      );
+
+      final safetyButtonId = seekerActive!.safetyButtonId!;
+      final button = await seeker.verifySafetyButton(
+        ButtonVerification(
+          method: ButtonVerificationMethod.qr,
+          payload: safetyButtonId,
+        ),
+      );
+      expect(button.success, isTrue);
+      await waitUntil(
+        () => caregiverActive?.status == BookingStatus.active,
+        reason: 'the session to start',
+      );
+
+      await caregiver.completeSession();
+      await waitUntil(
+        () => earnings?.earnings.isNotEmpty == true,
+        reason: 'earnings to be credited',
+      );
+      expect(earnings!.availableBalance, greaterThan(0));
+      expect(earnings!.earnings.first.kind, EarningKind.session);
+
+      await seeker.rateCaregiver(
+        CaregiverRating(
+          bookingId: booking.id,
+          caregiverId: caregiverId,
+          stars: 5,
+          comment: 'Kind and punctual.',
+        ),
+      );
+      await waitUntil(
+        () => feedback.isNotEmpty,
+        reason: 'the rating to reach the caregiver',
+      );
+      expect(feedback.first.stars, 5);
+    },
+  );
 
   test('a request reports no match when no caregiver is available', () async {
-    await seeker.signUp(name: 'Sari', email: 'sari@campus.ac.id', password: 'secret1');
+    await seeker.signUp(
+      name: 'Sari',
+      email: 'sari@care.org',
+      password: 'secret1',
+    );
     final booking = await seeker.submitRequest(helpRequest());
     expect(booking.status, BookingStatus.noMatch);
   });

@@ -65,8 +65,9 @@ class MockCarePlatform implements CareSeekerPlatform {
     }
     final bookingJson = _prefs.getString(_activeBookingKey);
     if (bookingJson != null) {
-      final booking =
-          Booking.fromJson(jsonDecode(bookingJson) as Map<String, Object?>);
+      final booking = Booking.fromJson(
+        jsonDecode(bookingJson) as Map<String, Object?>,
+      );
       if (booking.status.isOpen) {
         _activeBooking = booking;
       } else {
@@ -224,8 +225,9 @@ class MockCarePlatform implements CareSeekerPlatform {
     // one accepts in time and the care seeker keeps their money otherwise.
     // (FR-P-13, FR-CS-15)
     final refunded = _refunded(booking, partial: false);
-    final refundNote =
-        refunded.hasRefund ? ' ${formatIdr(refunded.refundAmount!)} refunded.' : '';
+    final refundNote = refunded.hasRefund
+        ? ' ${formatIdr(refunded.refundAmount!)} refunded.'
+        : '';
     _finishBooking(
       refunded
           .copyWith(status: BookingStatus.cancelled, cancellationReason: reason)
@@ -240,13 +242,58 @@ class MockCarePlatform implements CareSeekerPlatform {
   }
 
   @override
+  Future<ButtonVerificationResult> verifyCaregiverCode(String code) async {
+    final booking = _activeBooking;
+    if (booking == null || booking.status != BookingStatus.arrived) {
+      return const ButtonVerificationResult.failed(
+        'Wait until your caregiver arrives.',
+      );
+    }
+    await _smallDelay();
+    if (booking.clientCode == null || booking.clientCode != code.trim()) {
+      _finishBooking(
+        booking
+            .copyWith(
+              status: BookingStatus.cancelled,
+              cancellationReason: CancellationReason.failedVerification,
+            )
+            .withUpdate(
+              BookingUpdate(
+                status: BookingStatus.cancelled,
+                message:
+                    'Caregiver verification failed. The booking was cancelled.',
+                at: DateTime.now(),
+              ),
+            ),
+      );
+      return const ButtonVerificationResult.failed(
+        'The code did not match. The booking was cancelled.',
+      );
+    }
+    await _setActiveBooking(
+      booking
+          .copyWith(status: BookingStatus.codeVerified)
+          .withUpdate(
+            BookingUpdate(
+              status: BookingStatus.codeVerified,
+              message: 'You confirmed your caregiver identity.',
+              at: DateTime.now(),
+            ),
+          ),
+    );
+    return const ButtonVerificationResult.success();
+  }
+
+  @override
   Future<ButtonVerificationResult> verifySafetyButton(
     ButtonVerification verification,
   ) async {
     await _smallDelay();
     final booking = _activeBooking;
     if (booking == null) {
-      return const ButtonVerificationResult.failed('This booking is no longer active.');
+      return const ButtonVerificationResult.failed(
+        'This booking is no longer active.',
+      );
     }
     if (!booking.canVerifyButton) {
       return const ButtonVerificationResult.failed(
@@ -255,10 +302,12 @@ class MockCarePlatform implements CareSeekerPlatform {
     }
     final expected = booking.safetyButtonId;
     if (expected == null || verification.payload.trim() != expected) {
-      _finishBooking(_failedVerification(
-        booking,
-        'The safety button does not match this booking.',
-      ));
+      _finishBooking(
+        _failedVerification(
+          booking,
+          'The safety button does not match this booking.',
+        ),
+      );
       return const ButtonVerificationResult.failed(
         'The safety button does not match this booking. The booking was cancelled.',
       );
@@ -459,7 +508,8 @@ class MockCarePlatform implements CareSeekerPlatform {
   @override
   void simulateCaregiverArrival() {
     final booking = _activeBooking;
-    if (booking == null || booking.status != BookingStatus.caregiverTravelling) {
+    if (booking == null ||
+        booking.status != BookingStatus.caregiverTravelling) {
       return;
     }
     _arriveBooking(booking);
@@ -472,7 +522,9 @@ class MockCarePlatform implements CareSeekerPlatform {
       return;
     }
     if (!valid) {
-      _finishBooking(_failedVerification(booking, 'The client code did not match.'));
+      _finishBooking(
+        _failedVerification(booking, 'The caregiver code did not match.'),
+      );
       return;
     }
     unawaited(
@@ -485,7 +537,8 @@ class MockCarePlatform implements CareSeekerPlatform {
             .withUpdate(
               BookingUpdate(
                 status: BookingStatus.codeVerified,
-                message: 'Client code verified. Hand over the safety button.',
+                message:
+                    'Caregiver identity confirmed. Scan the safety button.',
                 at: DateTime.now(),
               ),
             ),
@@ -534,7 +587,10 @@ class MockCarePlatform implements CareSeekerPlatform {
     }
     _finishBooking(
       booking
-          .copyWith(status: BookingStatus.completed, outcome: SessionOutcome.completed)
+          .copyWith(
+            status: BookingStatus.completed,
+            outcome: SessionOutcome.completed,
+          )
           .withUpdate(
             BookingUpdate(
               status: BookingStatus.completed,
@@ -556,13 +612,17 @@ class MockCarePlatform implements CareSeekerPlatform {
       if (booking == null || booking.status != BookingStatus.matching) {
         return;
       }
-      if (!_nextRequestMatches || MockData.firstMatching(booking.genderFilter) == null) {
+      if (!_nextRequestMatches ||
+          MockData.firstMatching(booking.genderFilter) == null) {
         unawaited(
           _setActiveBooking(
-            booking.copyWith(status: BookingStatus.noMatch).withUpdate(
+            booking
+                .copyWith(status: BookingStatus.noMatch)
+                .withUpdate(
                   BookingUpdate(
                     status: BookingStatus.noMatch,
-                    message: 'No caregiver is available for this filter right now.',
+                    message:
+                        'No caregiver is available for this filter right now.',
                     at: DateTime.now(),
                   ),
                 ),
@@ -573,10 +633,13 @@ class MockCarePlatform implements CareSeekerPlatform {
       final caregiver = _nextMatchingCaregiver(booking.genderFilter);
       unawaited(
         _setActiveBooking(
-          booking.copyWith(status: BookingStatus.matched, caregiver: caregiver).withUpdate(
+          booking
+              .copyWith(status: BookingStatus.matched, caregiver: caregiver)
+              .withUpdate(
                 BookingUpdate(
                   status: BookingStatus.matched,
-                  message: 'Caregiver found. Review the price and pay to confirm.',
+                  message:
+                      'Caregiver found. Review the price and pay to confirm.',
                   at: DateTime.now(),
                 ),
               ),
@@ -611,7 +674,8 @@ class MockCarePlatform implements CareSeekerPlatform {
     _cancelPending();
     _pendingTimer = Timer(arrivalDelay, () {
       final booking = _activeBooking;
-      if (booking == null || booking.status != BookingStatus.caregiverTravelling) {
+      if (booking == null ||
+          booking.status != BookingStatus.caregiverTravelling) {
         return;
       }
       _arriveBooking(booking);
@@ -676,7 +740,8 @@ class MockCarePlatform implements CareSeekerPlatform {
             .withUpdate(
               BookingUpdate(
                 status: BookingStatus.arrived,
-                message: 'Your caregiver has arrived. Show your client code.',
+                message:
+                    'Your caregiver has arrived. Ask for their verification code.',
                 at: DateTime.now(),
               ),
             ),
@@ -690,8 +755,9 @@ class MockCarePlatform implements CareSeekerPlatform {
   Booking _failedVerification(Booking booking, String reason) {
     // A failed verification is refunded: no session ran. (FR-P-19)
     final refunded = _refunded(booking, partial: false);
-    final refundNote =
-        refunded.hasRefund ? ' ${formatIdr(refunded.refundAmount!)} refunded.' : '';
+    final refundNote = refunded.hasRefund
+        ? ' ${formatIdr(refunded.refundAmount!)} refunded.'
+        : '';
     return refunded
         .copyWith(
           status: BookingStatus.cancelled,
@@ -718,8 +784,9 @@ class MockCarePlatform implements CareSeekerPlatform {
       paymentStatus: partial
           ? PaymentStatus.partiallyRefunded
           : PaymentStatus.refunded,
-      refundAmount:
-          partial ? Pricing.earlyEndRefund(price) : price.total,
+      refundAmount: partial
+          ? Pricing.earlyEndRefund(price)
+          : price.serviceTotal,
     );
   }
 

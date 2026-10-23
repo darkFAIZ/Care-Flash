@@ -55,15 +55,24 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   }
 
   void _applySnapshot(Map<String, Object?> data) {
-    _caregiver = decodeOrNull(data['currentCaregiver'], CaregiverAccount.fromJson);
+    _caregiver = decodeOrNull(
+      data['currentCaregiver'],
+      CaregiverAccount.fromJson,
+    );
     _incomingRequest = decodeOrNull(data['incomingRequest'], Booking.fromJson);
     _activeBooking = decodeOrNull(data['activeBooking'], Booking.fromJson);
     _history = decodeList(data['bookingHistory'], Booking.fromJson);
     _earnings =
-        decodeOrNull(data['earnings'], EarningsSummary.fromJson) ?? const EarningsSummary();
-    _feedbackReceived = decodeList(data['feedbackReceived'], FeedbackReceived.fromJson);
-    _careSeekerRatings =
-        decodeList(data['careSeekerRatings'], CareSeekerRating.fromJson);
+        decodeOrNull(data['earnings'], EarningsSummary.fromJson) ??
+        const EarningsSummary();
+    _feedbackReceived = decodeList(
+      data['feedbackReceived'],
+      FeedbackReceived.fromJson,
+    );
+    _careSeekerRatings = decodeList(
+      data['careSeekerRatings'],
+      CareSeekerRating.fromJson,
+    );
     _caregiverController.add(_caregiver);
     _incomingController.add(_incomingRequest);
     _activeController.add(_activeBooking);
@@ -95,13 +104,12 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
     required String email,
     required String password,
     required Gender gender,
-  }) =>
-      _authenticate('caregiverSignUp', {
-        'name': name,
-        'email': email,
-        'password': password,
-        'gender': gender.name,
-      });
+  }) => _authenticate('caregiverSignUp', {
+    'name': name,
+    'email': email,
+    'password': password,
+    'gender': gender.name,
+  });
 
   @override
   Future<CaregiverAuthResult> signIn({
@@ -116,11 +124,15 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   ) async {
     final result = await _call(op, args);
     if (result['success'] == true) {
-      _caregiver = CaregiverAccount.fromJson(result['user']! as Map<String, Object?>);
+      _caregiver = CaregiverAccount.fromJson(
+        result['user']! as Map<String, Object?>,
+      );
       _caregiverController.add(_caregiver);
       return CaregiverAuthResult.success(_caregiver!);
     }
-    return CaregiverAuthResult.failure(result['error'] as String? ?? 'Sign in failed.');
+    return CaregiverAuthResult.failure(
+      result['error'] as String? ?? 'Sign in failed.',
+    );
   }
 
   @override
@@ -131,15 +143,12 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
 
   @override
   Future<void> submitVerification({
-    required String studentIdNumber,
-    required String university,
+    required String residentialIdNumber,
     required String documentLabel,
-  }) =>
-      _callVoid('submitVerification', {
-        'studentIdNumber': studentIdNumber,
-        'university': university,
-        'documentLabel': documentLabel,
-      });
+  }) => _callVoid('submitVerification', {
+    'residentialIdNumber': residentialIdNumber,
+    'documentLabel': documentLabel,
+  });
 
   @override
   Future<void> completeSafetyModule() => _callVoid('completeSafetyModule');
@@ -187,18 +196,11 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   Future<void> markArrived() => _callVoid('markArrived');
 
   @override
-  Future<ButtonVerificationResult> verifyClientCode(String code) async {
-    final json = await _call('verifyClientCode', {'code': code});
-    return json['success'] == true
-        ? const ButtonVerificationResult.success()
-        : ButtonVerificationResult.failed(json['message'] as String?);
-  }
-
-  @override
   Future<void> completeSession() => _callVoid('completeSession');
 
   @override
-  Future<void> sos(String description) => _callVoid('sos', {'description': description});
+  Future<void> sos(String description) =>
+      _callVoid('sos', {'description': description});
 
   @override
   Future<void> reportCareSeeker(IncidentReport report) =>
@@ -252,6 +254,9 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   void simulateCareSeekerCancel() {}
 
   @override
+  void simulateCareSeekerCodeConfirmation({bool valid = true}) {}
+
+  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
@@ -263,10 +268,12 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   Future<Map<String, Object?>> _call(
     String op, [
     Map<String, Object?> args = const {},
-  ]) async =>
-      await _client.call(op, args) as Map<String, Object?>;
+  ]) async => await _client.call(op, args) as Map<String, Object?>;
 
-  Future<void> _callVoid(String op, [Map<String, Object?> args = const {}]) async {
+  Future<void> _callVoid(
+    String op, [
+    Map<String, Object?> args = const {},
+  ]) async {
     await _client.call(op, args);
   }
 }

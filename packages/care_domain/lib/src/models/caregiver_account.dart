@@ -4,7 +4,7 @@ import 'account.dart';
 /// A caregiver's account including its onboarding state. (FR-CM-1 to FR-CM-6)
 ///
 /// Care-Merchant works with this type. Care-Flash only ever sees the public
-/// [Caregiver] profile produced by [toPublic], so student identity details stay
+/// [Caregiver] profile produced by [toPublic], so identity details stay
 /// private to the caregiver app. (DC-CM-3)
 class CaregiverAccount {
   const CaregiverAccount({
@@ -18,9 +18,8 @@ class CaregiverAccount {
     this.rejectionReason,
     this.safetyModuleCompleted = false,
     this.availability = CaregiverAvailability.available,
-    this.studentIdNumber,
-    this.university,
-    this.studentIdDocumentLabel,
+    this.residentialIdNumber,
+    this.identityCardLabel,
     this.verificationSubmittedAt,
   });
 
@@ -34,7 +33,7 @@ class CaregiverAccount {
   final double rating;
   final int reviewCount;
 
-  /// Platform review state for the submitted student identity. (FR-CM-2, FR-CM-3)
+  /// Platform review state for the submitted identity card. (FR-CM-2, FR-CM-3)
   final VerificationStatus verificationStatus;
 
   /// Why the platform rejected the submission, when [verificationStatus] is
@@ -48,9 +47,8 @@ class CaregiverAccount {
   final CaregiverAvailability availability;
 
   // Onboarding details the caregiver submitted. (FR-CM-2)
-  final String? studentIdNumber;
-  final String? university;
-  final String? studentIdDocumentLabel;
+  final String? residentialIdNumber;
+  final String? identityCardLabel;
   final DateTime? verificationSubmittedAt;
 
   String get firstName => name.split(' ').first;
@@ -81,7 +79,7 @@ class CaregiverAccount {
         gender: gender,
         rating: rating,
         reviewCount: reviewCount,
-        studentVerified: isVerified,
+        identityVerified: isVerified,
         safetyBadge: safetyModuleCompleted,
         availability: availability,
       );
@@ -97,9 +95,8 @@ class CaregiverAccount {
     Object? rejectionReason = _unset,
     bool? safetyModuleCompleted,
     CaregiverAvailability? availability,
-    Object? studentIdNumber = _unset,
-    Object? university = _unset,
-    Object? studentIdDocumentLabel = _unset,
+    Object? residentialIdNumber = _unset,
+    Object? identityCardLabel = _unset,
     Object? verificationSubmittedAt = _unset,
   }) {
     return CaregiverAccount(
@@ -115,13 +112,12 @@ class CaregiverAccount {
           : rejectionReason as String?,
       safetyModuleCompleted: safetyModuleCompleted ?? this.safetyModuleCompleted,
       availability: availability ?? this.availability,
-      studentIdNumber: studentIdNumber == _unset
-          ? this.studentIdNumber
-          : studentIdNumber as String?,
-      university: university == _unset ? this.university : university as String?,
-      studentIdDocumentLabel: studentIdDocumentLabel == _unset
-          ? this.studentIdDocumentLabel
-          : studentIdDocumentLabel as String?,
+      residentialIdNumber: residentialIdNumber == _unset
+          ? this.residentialIdNumber
+          : residentialIdNumber as String?,
+      identityCardLabel: identityCardLabel == _unset
+          ? this.identityCardLabel
+          : identityCardLabel as String?,
       verificationSubmittedAt: verificationSubmittedAt == _unset
           ? this.verificationSubmittedAt
           : verificationSubmittedAt as DateTime?,
@@ -139,9 +135,8 @@ class CaregiverAccount {
         'rejectionReason': rejectionReason,
         'safetyModuleCompleted': safetyModuleCompleted,
         'availability': availability.name,
-        'studentIdNumber': studentIdNumber,
-        'university': university,
-        'studentIdDocumentLabel': studentIdDocumentLabel,
+        'residentialIdNumber': residentialIdNumber,
+        'identityCardLabel': identityCardLabel,
         'verificationSubmittedAt': verificationSubmittedAt?.toIso8601String(),
       };
 
@@ -158,9 +153,10 @@ class CaregiverAccount {
         safetyModuleCompleted: json['safetyModuleCompleted'] as bool? ?? false,
         availability: CaregiverAvailability.values
             .byName(json['availability'] as String? ?? 'available'),
-        studentIdNumber: json['studentIdNumber'] as String?,
-        university: json['university'] as String?,
-        studentIdDocumentLabel: json['studentIdDocumentLabel'] as String?,
+        residentialIdNumber: json['residentialIdNumber'] as String? ??
+            json['studentIdNumber'] as String?,
+        identityCardLabel: json['identityCardLabel'] as String? ??
+            json['studentIdDocumentLabel'] as String?,
         verificationSubmittedAt: json['verificationSubmittedAt'] == null
             ? null
             : DateTime.parse(json['verificationSubmittedAt']! as String),

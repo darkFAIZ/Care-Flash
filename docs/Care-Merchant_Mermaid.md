@@ -6,7 +6,7 @@ Caregiver app flow. Shared matching, payment, booking, verification, and session
 flowchart TD
     Start([Open Care-Merchant])
     Account["Create account or log in"]
-    SubmitID["Submit student ID and<br/>required verification details"]
+    SubmitID["Submit residential ID and<br/>required verification details"]
     Verified{"Caregiver verified?"}
     Resubmit["View rejection reason<br/>and resubmit if allowed"]
     SafetyTraining["Complete safety module<br/>and receive badge"]

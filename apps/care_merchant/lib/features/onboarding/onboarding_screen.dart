@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import 'verification_status_screen.dart';
 
-/// Submit student identification for platform review. (FR-CM-2)
+/// Submit residential identity information for platform review. (FR-CM-2)
 ///
 /// Documents are only transmitted through the platform's authorized services,
 /// so this screen collects a reference rather than a real file upload in the
@@ -21,16 +21,14 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _studentId = TextEditingController();
-  final _university = TextEditingController();
+  final _residentialId = TextEditingController();
   String? _documentLabel;
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
-    _studentId.dispose();
-    _university.dispose();
+    _residentialId.dispose();
     super.dispose();
   }
 
@@ -39,7 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
     if (_documentLabel == null) {
-      setState(() => _error = 'Attach a photo of your student ID to continue.');
+      setState(() => _error = 'Attach a photo of your identity card to continue.');
       return;
     }
     setState(() {
@@ -47,8 +45,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _error = null;
     });
     await ref.read(platformProvider).submitVerification(
-          studentIdNumber: _studentId.text,
-          university: _university.text,
+          residentialIdNumber: _residentialId.text,
           documentLabel: _documentLabel!,
         );
     if (!mounted) {
@@ -75,12 +72,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Caregivers are verified students.',
+                      'Verify your identity to become a caregiver.',
                       style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'We review your student ID before you can receive requests. '
+                      'We review your residential ID and identity card before you can receive requests. '
                       'This usually takes a short while.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
@@ -88,33 +85,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: _studentId,
+                      controller: _residentialId,
                       decoration: const InputDecoration(
-                        labelText: 'Student ID number',
+                        labelText: 'Residential ID number',
                         prefixIcon: Icon(Icons.badge_outlined),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter your student ID number';
+                          return 'Enter your residential ID number';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _university,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'University',
-                        prefixIcon: Icon(Icons.school_outlined),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Enter your university';
-                        }
-                        return null;
-                      },
-                    ),
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
                       onPressed: _busy
@@ -123,12 +106,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 // TODO(team): replace with a real file picker
                                 // and the platform's document upload service.
                                 // (DC-CM-3)
-                                _documentLabel = 'KTM.jpg';
+                                _documentLabel = 'identity-card.jpg';
                                 _error = null;
                               }),
                       icon: const Icon(Icons.upload_file_outlined),
                       label: Text(_documentLabel == null
-                          ? 'Attach student ID photo'
+                          ? 'Attach identity card photo'
                           : 'Attached: $_documentLabel'),
                     ),
                     if (_error != null) ...[

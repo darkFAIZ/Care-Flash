@@ -27,49 +27,112 @@ controls become no-ops.
 ```bash
 # Terminal 1 - care seeker app
 cd apps/care_flash
-flutter run -d edge          # or -d chrome, or a connected device
+flutter run -d edge --dart-define=BACKEND_URL=mock  # or -d chrome
 
 # Terminal 2 - caregiver app
 cd apps/care_merchant
-flutter run -d edge
+flutter run -d edge --dart-define=BACKEND_URL=mock
 ```
 
 Signing in: any valid-looking email plus a password of 6+ characters logs you straight into a
 ready, verified demo account. Use **Create account** instead if you want to walk through the
-caregiver onboarding (student ID, safety module).
+caregiver onboarding (residential ID, safety module).
 
 ### Connected live demo (backend + two Edge windows)
 
-Start the shared backend once, then launch each app pointing at it. On the web each app is shown
-inside a phone frame so the mobile aspect ratio is preserved.
+Both apps have their own frontend-facing platform adapter (`RemoteCarePlatform` for Care-Flash
+and `RemoteCaregiverPlatform` for Care-Merchant). Those adapters connect to the same shared
+Care-Flash platform backend, which owns accounts, caregiver availability, request matching,
+payments, and booking state. Backend snapshots are pushed to both apps over WebSocket.
+
+```mermaid
+flowchart LR
+  CF[Care-Flash app] --> CFBFF[Care-seeker platform adapter]
+  CM[Care-Merchant app] --> CMBFF[Caregiver platform adapter]
+  CFBFF --> WS[Shared Care-Flash backend<br/>WebSocket + booking state]
+  CMBFF --> WS
+```
+
+Start the shared backend once, then launch each app with the same backend URL. On the web each
+app is shown inside a phone frame so the mobile aspect ratio is preserved.
 
 ```bash
-# Terminal 1 - the shared backend (run from the repository root)
-dart run packages/care_backend/bin/server.dart 8080
+# Terminal 1 - shared backend (run from the repository root; listens for devices)
+dart run packages/care_backend/bin/server.dart 8080 0.0.0.0
 
-# Terminal 2 - care seeker (Care-Flash)
+# Terminal 2 - care seeker (Care-Flash); defaults to ws://localhost:8080
 cd apps/care_flash
-flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080
+flutter run -d edge
 
 # Terminal 3 - caregiver (Care-Merchant)
 cd apps/care_merchant
-flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080
+flutter run -d edge
 ```
 
-The backend keeps accounts in memory, so **Create account** in both apps the first time (the
-caregiver must finish onboarding and set themselves **Available**). Without `--dart-define` the
-apps fall back to the offline mock above.
+For Android emulators, use `10.0.2.2` to reach the computer running the backend:
+
+```bash
+cd apps/care_flash
+flutter run -d <android-emulator> --dart-define=BACKEND_URL=ws://10.0.2.2:8080
+
+cd apps/care_merchant
+flutter run -d <android-emulator> --dart-define=BACKEND_URL=ws://10.0.2.2:8080
+```
+
+For two physical phones, connect both to the same Wi-Fi and replace `10.0.2.2` with the
+computer's local IPv4 address (for example, `192.168.1.20`). Allow Dart through the computer's
+private-network firewall if prompted. `ws://` cleartext traffic is enabled for Android debug
+builds only; deployed builds should use a secured `wss://` backend URL.
+
+The backend saves accounts and booking state to
+`packages/care_backend/data/care_backend.json` by default, so local
+accounts survive a restart. Set `CARE_DATA_FILE` to move that file to another path. **Create
+account** in both apps the first time; the caregiver must finish onboarding and set themselves
+**Available**. Both apps use the shared backend by default. Use
+`--dart-define=BACKEND_URL=mock` only for an intentionally separate offline walkthrough. If the
+backend is unavailable, the app shows a connection screen instead of silently using mock data.
+
+### Deploy the shared backend to the internet
+
+The repository includes a Docker image definition and a Render Blueprint. To create a public
+demo service:
+
+1. Push this repository to a GitHub account connected to Render.
+2. In Render, create a new **Blueprint** from the repository and deploy `render.yaml`. It creates
+   the backend in Singapore with a persistent disk mounted for its JSON data file.
+3. Copy the service's HTTPS hostname, then use it as a secure WebSocket URL in **both** app builds:
+
+```bash
+cd apps/care_flash
+flutter build apk --dart-define=BACKEND_URL=wss://YOUR-SERVICE.onrender.com
+
+cd apps/care_merchant
+flutter build apk --dart-define=BACKEND_URL=wss://YOUR-SERVICE.onrender.com
+```
+
+Replace `YOUR-SERVICE` with the hostname shown by Render. The Render plan with a persistent disk
+may incur hosting charges. The included JSON store and payment/identity flows are for a class/demo
+prototype; do not enter real government ID details or payment credentials. Before a real launch,
+move to a managed database with encryption and access controls, review personal-data handling,
+and integrate real identity and payment providers.
+
+The caregiver receives a live in-app request alert after the care seeker completes payment in
+Care-Flash. The request also appears on the Care-Merchant Requests tab. This demo alert requires
+Care-Merchant to be open and connected; push notifications while the app is closed need a push
+service such as Firebase Cloud Messaging.
 
 **Connected script (one booking, two windows):**
 
-1. Care-Merchant: **Create account** → student ID → simulated approval → safety module → set
+1. Care-Merchant: **Create account** → residential ID → simulated approval → safety module → set
    **Available**. Care-Flash: **Create account**.
 2. Care-Flash: request a visit (help type → checklist → location/time/duration → gender filter →
-   price) and **Pay**. The client code appears.
+   price) and pay the caregiver service plus platform fee. The care seeker separately orders and
+   pays for the caregiver's ride in Grab; ride ordering/status is not integrated in this prototype.
 3. Care-Merchant: the request lands in the **Requests** tab → **Accept** → **Start trip** →
    **Mark arrived**.
-4. Care-Flash shows *arrived*; read the client code and enter it in Care-Merchant. Verify the
-   **safety button** in Care-Flash to start the session in both windows.
+4. Care-Merchant shows its one-time caregiver code after arrival. The caregiver says it and the
+   care seeker enters it in Care-Flash to confirm identity. Then verify the **safety button** in
+   Care-Flash to start the session in both windows.
 5. Care-Merchant: **Mark work complete** → the earnings appear. Care-Flash: rate the caregiver →
    it shows up in the caregiver's **Feedback** tab.
 
@@ -86,14 +149,15 @@ Controls to simulate the other side.
 3. **Boundary checklist**: allowed tasks, disallowed tasks, off-limit rooms → Next.
 4. **Location, date and time, duration** → Next.
 5. **Caregiver gender filter** (default Both) → Next.
-6. **Price estimate** (caregiver price + 5% fee + Grab fare = total) → submit. Matching status appears.
+6. **Price estimate** (caregiver price + 5% fee, plus a separate Grab estimate) → submit. Matching status appears.
 7. The caregiver auto-accepts after a few seconds. On the **matched** screen you see the caregiver
    profile and the itemized price → Continue.
-8. **Payment**: pick GoPay / DANA / OVO / Mastercard → Pay. Handle the success path.
-9. The private **client verification code** is shown (only you and the caregiver ever see it).
-10. **Booking status** screen: watch acceptance, Grab pickup and arrival notifications.
-11. At arrival, tap **Simulate scan** (QR or NFC) - the session starts only after both the client
-    code and the safety button are confirmed.
+8. **Payment**: pick GoPay / DANA / OVO / Mastercard to pay the service and platform fee.
+9. Order and pay for the caregiver's ride in Grab. Grab dispatch and ride status are not connected
+   to this prototype.
+10. **Booking status** screen: watch caregiver acceptance and arrival updates.
+11. At arrival, ask the caregiver to say the one-time code and enter it to confirm their identity.
+    Then tap **Simulate scan** (QR or NFC) to verify the safety button and start the session.
 12. **Active session**: a timer and the work checklist. Two separate actions:
     - **End Early** - ends the session, pays the caregiver the 50% early-end compensation, and
       refunds you the unused part.
@@ -106,16 +170,17 @@ Controls to simulate the other side.
 ### B. Care-Merchant (caregiver) - accept a request, run a session, get paid, give feedback
 
 1. Launch. Splash → login. Sign in (any email + 6-char password) to land on a verified demo
-   caregiver. (Use **Create account** to walk through onboarding: student ID → simulated approval →
+   caregiver. (Use **Create account** to walk through onboarding: residential ID → simulated approval →
    safety module → badge.)
 2. **Requests** tab: an incoming request arrives after a few seconds (or tap Demo Controls →
    *Simulate incoming request*). You see the reference, help type, description, boundary checklist
-   and expected pay - never the care seeker's location or client code. **Accept** or **Decline**
+   and expected pay - never the care seeker's location or verification code. **Accept** or **Decline**
    within the 60-second window (declining has no rating penalty).
-3. After accepting, the **booking** screen shows pickup, destination and Grab status.
+3. After accepting, the **booking** screen shows pickup and destination. The care seeker arranges
+   and pays for the ride in Grab.
 4. **Start trip** → **Mark arrived**.
-5. Enter the **client code** the care seeker shows you. A wrong code cancels the booking and
-   notifies support.
+5. Share your one-time caregiver code at arrival. The care seeker enters it to confirm your
+   identity; a wrong code cancels the booking and notifies support.
 6. **Button handover**: the booking-linked QR / NFC is ready. When the care seeker scans it, the
    session starts. (Use Demo Controls → *Simulate care seeker button scan*.)
 7. **Session**: timer + work checklist. You can **Mark work complete**, **Report the care seeker**
@@ -150,17 +215,18 @@ The roadmap below follows the requirements in the SRS documents. Phase order is 
    - Agree on supported platforms, development standards, and shared API contracts.
 2. **Accounts and caregiver onboarding**
    - Implement account creation and login for both apps.
-   - Add caregiver student-ID/background verification, safety training, gender profile, and availability.
+   - Add caregiver residential-ID/background verification, safety training, gender profile, and availability.
 3. **Care request and matching**
    - Build the Care-Flash request flow: help type, optional description, boundary checklist, location, schedule, and caregiver gender filter.
    - Implement nearby available-caregiver matching and caregiver request accept/decline in Care-Merchant.
    - Show caregiver profile and itemized price estimates.
 4. **Booking, payment, and transport**
    - Integrate a payment provider and calculate caregiver service price, 5% platform fee, and estimated Grab fare.
-   - Generate a private client verification code after successful payment.
-   - Integrate Grab pickup and provide booking and ride status to both apps.
+   - Generate a private caregiver verification code after acceptance.
+   - Let the care seeker arrange and pay for the ride in Grab. A direct Grab API integration is
+     unavailable, so dispatch and ride status remain outside this prototype.
 5. **Arrival verification and session safety**
-   - Verify the care seeker's code in Care-Merchant.
+   - Let the care seeker verify the caregiver's code in Care-Flash.
    - Generate or activate the booking-linked safety-button QR/NFC and verify it in Care-Flash.
    - Implement session start, boundary checklist, timer, End Early, Report, and caregiver SOS flows.
 6. **Completion, incidents, and feedback**

@@ -41,8 +41,10 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
           children: [
             Row(
               children: [
-                Icon(Icons.bug_report_outlined,
-                    color: theme.colorScheme.primary),
+                Icon(
+                  Icons.bug_report_outlined,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text('Demo controls', style: theme.textTheme.titleLarge),
                 const Spacer(),
@@ -70,7 +72,9 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Next review rejects the ID'),
-              subtitle: const Text('Turn on to show the rejection and resubmit path'),
+              subtitle: const Text(
+                'Turn on to show the rejection and resubmit path',
+              ),
               value: _nextVerificationFails,
               onChanged: (value) {
                 setState(() => _nextVerificationFails = value);
@@ -78,7 +82,10 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
               },
             ),
             const Divider(height: 24),
-            Text('Simulate the care seeker', style: theme.textTheme.titleMedium),
+            Text(
+              'Simulate the care seeker',
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -87,10 +94,8 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
                 _action('Send a request', platform.simulateIncomingRequest),
                 _action('Cancel booking', platform.simulateCareSeekerCancel),
                 _action(
-                  'Present client code',
-                  () => unawaited(
-                    platform.verifyClientCode(platform.debugClientCode ?? ''),
-                  ),
+                  'Confirm caregiver code',
+                  platform.simulateCareSeekerCodeConfirmation,
                 ),
                 _action(
                   'Scan the button',
@@ -102,7 +107,7 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
             if (platform.debugClientCode != null) ...[
               const SizedBox(height: 12),
               Text(
-                'The care seeker is showing client code '
+                'Caregiver verification code: '
                 '${platform.debugClientCode}.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,

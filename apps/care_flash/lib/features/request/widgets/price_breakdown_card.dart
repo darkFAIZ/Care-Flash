@@ -26,18 +26,31 @@ class PriceBreakdownCard extends StatelessWidget {
             const SizedBox(height: 12),
             _Line(label: 'Caregiver service', amount: price.caregiverPrice),
             _Line(label: 'Platform fee (5%)', amount: price.platformFee),
-            _Line(label: 'Estimated Grab fare', amount: price.grabFare),
+            _Line(
+              label: 'Estimated Grab fare · pay in Grab',
+              amount: price.grabFare,
+            ),
             const Divider(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Total', style: theme.textTheme.titleMedium),
+                Text('Pay in Care-Flash', style: theme.textTheme.titleMedium),
                 Text(
-                  formatIdr(price.total),
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  formatIdr(price.serviceTotal),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            _Line(label: 'Estimated total including Grab', amount: price.total),
+            const SizedBox(height: 8),
+            Text(
+              'Order and pay for the caregiver’s ride directly in Grab. The ride estimate is not charged here.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

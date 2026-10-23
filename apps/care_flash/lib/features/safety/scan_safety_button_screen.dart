@@ -10,7 +10,7 @@ import '../home/home_shell.dart';
 import '../session/session_screen.dart';
 
 /// Verifies the physical safety button handed over once the caregiver has
-/// checked the client code. (FR-CS-13, FR-CS-14, FR-CS-15)
+/// confirmed the caregiver's identity code. (FR-CS-13, FR-CS-14, FR-CS-15)
 ///
 /// The [/scan-qr] and [/scan-nfc] routes share this screen; only the
 /// verification method changes. The prototype has no camera or NFC reader, so
@@ -34,7 +34,8 @@ class _ScanSafetyButtonScreenState
 
   bool get _isQr => widget.method == ButtonVerificationMethod.qr;
 
-  String get _title => _isQr ? 'Scan the safety button' : 'Read the safety button';
+  String get _title =>
+      _isQr ? 'Scan the safety button' : 'Read the safety button';
 
   Future<void> _verify({required bool valid}) async {
     final booking = ref.read(activeBookingProvider).value;
@@ -42,7 +43,9 @@ class _ScanSafetyButtonScreenState
       return;
     }
     setState(() => _busy = true);
-    final result = await ref.read(platformProvider).verifySafetyButton(
+    final result = await ref
+        .read(platformProvider)
+        .verifySafetyButton(
           ButtonVerification(
             method: widget.method,
             payload: valid ? (booking.safetyButtonId ?? '') : 'WRONG-BUTTON',
@@ -56,7 +59,9 @@ class _ScanSafetyButtonScreenState
       context.go(SessionScreen.route);
     } else {
       // The platform cancels the booking when the button does not match.
-      await _showFailure(result.message ?? 'The safety button was not verified.');
+      await _showFailure(
+        result.message ?? 'The safety button was not verified.',
+      );
     }
   }
 
@@ -167,7 +172,7 @@ class _ScanSafetyButtonScreenState
             const SizedBox(height: 16),
             Text(
               'Your caregiver hands you the booking-linked safety button once '
-              'your client code is verified. Scanning pairs it to this session.',
+              'you confirm their identity code. Scanning pairs it to this session.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

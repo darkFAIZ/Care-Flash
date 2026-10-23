@@ -7,6 +7,7 @@ import '../../core/providers.dart';
 import '../onboarding/safety_module_screen.dart';
 import '../onboarding/verification_status_screen.dart';
 import 'login_screen.dart';
+import 'preferences_sheet.dart';
 
 /// Profile page: availability, gender, verification and safety status, and log
 /// out. (FR-CM-5, FR-CM-6)
@@ -65,8 +66,12 @@ class ProfileTab extends ConsumerWidget {
                         children: [
                           _badge(
                             theme,
-                            caregiver.isVerified ? 'Verified student' : 'Not verified',
-                            caregiver.isVerified ? Icons.verified_outlined : Icons.info_outline,
+                            caregiver.isVerified
+                                ? 'Identity verified'
+                                : 'Not verified',
+                            caregiver.isVerified
+                                ? Icons.verified_outlined
+                                : Icons.info_outline,
                             ok: caregiver.isVerified,
                           ),
                           _badge(
@@ -129,6 +134,13 @@ class ProfileTab extends ConsumerWidget {
             title: const Text('Rating'),
             subtitle: Text(caregiver.ratingLabel),
           ),
+          ListTile(
+            leading: const Icon(Icons.tune),
+            title: const Text('Language and appearance'),
+            subtitle: const Text('Language, light and dark mode'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showMerchantPreferences(context),
+          ),
           const Divider(height: 1),
           ListTile(
             leading: Icon(Icons.logout, color: theme.colorScheme.error),
@@ -148,8 +160,12 @@ class ProfileTab extends ConsumerWidget {
     );
   }
 
-  Widget _badge(ThemeData theme, String label, IconData icon,
-      {required bool ok}) {
+  Widget _badge(
+    ThemeData theme,
+    String label,
+    IconData icon, {
+    required bool ok,
+  }) {
     final color = ok ? theme.colorScheme.primary : theme.colorScheme.outline;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -162,7 +178,10 @@ class ProfileTab extends ConsumerWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
-          Text(label, style: theme.textTheme.labelSmall?.copyWith(color: color)),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(color: color),
+          ),
         ],
       ),
     );

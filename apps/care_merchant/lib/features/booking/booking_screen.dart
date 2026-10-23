@@ -58,7 +58,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               maxLines: 3,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(hintText: 'Describe the concern'),
+              decoration: const InputDecoration(
+                hintText: 'Describe the concern',
+              ),
             ),
           ],
         ),
@@ -82,7 +84,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       return;
     }
     await _run(
-      () => ref.read(platformProvider).reportDanger(
+      () => ref
+          .read(platformProvider)
+          .reportDanger(
             description.isEmpty ? 'Safety concern reported.' : description,
           ),
     );
@@ -150,8 +154,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (kDebugMode && booking.clientCode != null)
-                    _ClientCodeDebug(clientCode: booking.clientCode!),
                   _TripCard(booking: booking),
                   const SizedBox(height: 16),
                   _BookingDetailsCard(booking: booking),
@@ -198,61 +200,37 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   bool _canReportDanger(Booking booking) => switch (booking.status) {
-        BookingStatus.confirmed ||
-        BookingStatus.caregiverTravelling ||
-        BookingStatus.arrived ||
-        BookingStatus.codeVerified =>
-          true,
-        _ => false,
-      };
+    BookingStatus.confirmed ||
+    BookingStatus.caregiverTravelling ||
+    BookingStatus.arrived ||
+    BookingStatus.codeVerified => true,
+    _ => false,
+  };
 
   (String, VoidCallback) _primaryAction(Booking booking) {
     return switch (booking.status) {
       BookingStatus.confirmed => (
-          'I\'m on my way',
-          () => _run(ref.read(platformProvider).startTrip),
-        ),
+        'I\'m on my way',
+        () => _run(ref.read(platformProvider).startTrip),
+      ),
       BookingStatus.caregiverTravelling => (
-          'I\'ve arrived',
-          () => _run(ref.read(platformProvider).markArrived),
-        ),
+        'I\'ve arrived',
+        () => _run(ref.read(platformProvider).markArrived),
+      ),
       BookingStatus.arrived => (
-          'Verify the client code',
-          () => context.push(ClientCodeScreen.route),
-        ),
+        'Share your identity code',
+        () => context.push(ClientCodeScreen.route),
+      ),
       BookingStatus.codeVerified => (
-          'Safety button handover',
-          () => context.push(ButtonHandoverScreen.route),
-        ),
+        'Safety button handover',
+        () => context.push(ButtonHandoverScreen.route),
+      ),
       BookingStatus.active => (
-          'Open session',
-          () => context.push(SessionScreen.route),
-        ),
+        'Open session',
+        () => context.push(SessionScreen.route),
+      ),
       _ => ('Back home', () => context.go(HomeShell.route)),
     };
-  }
-}
-
-class _ClientCodeDebug extends StatelessWidget {
-  const _ClientCodeDebug({required this.clientCode});
-
-  final String clientCode;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Debug only: the real care seeker shows this on their own device.
-    return Card(
-      color: theme.colorScheme.tertiaryContainer,
-      child: ListTile(
-        leading: const Icon(Icons.bug_report_outlined),
-        title: const Text('Demo: the care seeker\'s client code'),
-        trailing: Text(
-          clientCode,
-          style: theme.textTheme.titleMedium,
-        ),
-      ),
-    );
   }
 }
 
@@ -268,17 +246,17 @@ class _TripCard extends StatelessWidget {
     final theme = Theme.of(context);
     final (status, icon) = switch (booking.status) {
       BookingStatus.confirmed => (
-          'Book a Grab ride to the care seeker.',
-          Icons.local_taxi_outlined,
-        ),
+        'The care seeker orders and pays for the Grab ride.',
+        Icons.local_taxi_outlined,
+      ),
       BookingStatus.caregiverTravelling => (
-          'On the way. Share your trip with the platform.',
-          Icons.directions_car_filled_outlined,
-        ),
+        'On the way. Share your trip with the platform.',
+        Icons.directions_car_filled_outlined,
+      ),
       BookingStatus.arrived || BookingStatus.codeVerified => (
-          'You have arrived at the care seeker.',
-          Icons.location_on_outlined,
-        ),
+        'You have arrived at the care seeker.',
+        Icons.location_on_outlined,
+      ),
       _ => ('Trip details.', Icons.route_outlined),
     };
 
@@ -288,9 +266,9 @@ class _TripCard extends StatelessWidget {
           ListTile(
             leading: Icon(icon, color: theme.colorScheme.primary),
             title: Text(status),
-            // TODO(team): no real Grab integration in the prototype; the
-            // care seeker's mock ride supplies pickup tracking later. (FR-CM-10)
-            subtitle: const Text('Grab integration is mocked for the demo.'),
+            subtitle: const Text(
+              'Ride booking and payment happen in the care seeker’s Grab app.',
+            ),
           ),
           const Divider(height: 0),
           ListTile(
@@ -336,8 +314,10 @@ class _BookingDetailsCard extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
-                Text(booking.requestReference,
-                    style: theme.textTheme.labelLarge),
+                Text(
+                  booking.requestReference,
+                  style: theme.textTheme.labelLarge,
+                ),
               ],
             ),
             if (booking.description != null) ...[
@@ -360,13 +340,13 @@ class _BookingDetailsCard extends StatelessWidget {
   }
 
   Widget _meta(ThemeData theme, IconData icon, String label) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+      ],
+    ),
+  );
 }

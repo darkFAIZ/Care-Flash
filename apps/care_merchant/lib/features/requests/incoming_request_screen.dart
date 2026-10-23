@@ -12,7 +12,7 @@ import '../home/home_shell.dart';
 /// The incoming request detail with the accept and decline actions. (FR-CM-7 to
 /// FR-CM-9)
 ///
-/// The care seeker's location and private client code are deliberately not
+/// The care seeker's location and caregiver verification code are deliberately not
 /// shown here, because the caregiver must not see them before accepting.
 /// (FR-CM-8, UI-CM-2, DC-CM-2)
 class IncomingRequestScreen extends ConsumerStatefulWidget {
@@ -113,14 +113,21 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
                 children: [
                   _countdownBanner(theme, remaining),
                   const SizedBox(height: 16),
-                  Text(booking.requestReference,
-                      style: theme.textTheme.labelLarge),
+                  Text(
+                    booking.requestReference,
+                    style: theme.textTheme.labelLarge,
+                  ),
                   const SizedBox(height: 4),
-                  Text(booking.helpType.label,
-                      style: theme.textTheme.headlineSmall),
+                  Text(
+                    booking.helpType.label,
+                    style: theme.textTheme.headlineSmall,
+                  ),
                   if (booking.description != null) ...[
                     const SizedBox(height: 8),
-                    Text(booking.description!, style: theme.textTheme.bodyLarge),
+                    Text(
+                      booking.description!,
+                      style: theme.textTheme.bodyLarge,
+                    ),
                   ],
                   const SizedBox(height: 16),
                   _metaCard(theme, booking),
@@ -141,8 +148,9 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
   }
 
   Duration _remaining(Booking booking) {
-    final deadline = booking.createdAt
-        .add(PlatformPolicy.caregiverResponseTimeout);
+    final deadline = booking.createdAt.add(
+      PlatformPolicy.caregiverResponseTimeout,
+    );
     final remaining = deadline.difference(DateTime.now());
     return remaining.isNegative ? Duration.zero : remaining;
   }
@@ -259,8 +267,10 @@ class _ExpectedPayCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Expected caregiver pay',
-                      style: theme.textTheme.titleSmall),
+                  Text(
+                    'Expected caregiver pay',
+                    style: theme.textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Your service price for this visit. The platform fee and '
@@ -294,7 +304,11 @@ class _PrivacyNote extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.lock_outline, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        Icon(
+          Icons.lock_outline,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(

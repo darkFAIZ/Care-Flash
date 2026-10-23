@@ -38,7 +38,7 @@ class VisitLocation {
   /// Mock locations offered in the demo. TODO(team): replace with a map picker.
   static const List<VisitLocation> mockPresets = [
     VisitLocation(
-      label: 'Campus library',
+      label: 'Community library',
       address: 'Jl. Kampus Raya No. 1, Depok',
       latitude: -6.3628,
       longitude: 106.8270,
@@ -50,7 +50,7 @@ class VisitLocation {
       longitude: 106.8317,
     ),
     VisitLocation(
-      label: 'Student apartment',
+      label: 'Residential apartment',
       address: 'Jl. Akses UI No. 7, Depok',
       latitude: -6.3600,
       longitude: 106.8260,

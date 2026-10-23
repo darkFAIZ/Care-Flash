@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: care-flash-platform
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: CARE_DATA_FILE
+        value: /var/data/care_backend.json
+    disk:
+      name: care-flash-platform-data
+      mountPath: /var/data
+      sizeGB: 1

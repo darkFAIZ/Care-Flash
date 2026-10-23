@@ -14,7 +14,9 @@ final HelpRequest _request = HelpRequest(
 
 /// Runs [body] with a fresh mock platform inside a fake clock so the simulated
 /// timers can be advanced instantly.
-void withPlatform(void Function(FakeAsync async, MockCarePlatform platform) body) {
+void withPlatform(
+  void Function(FakeAsync async, MockCarePlatform platform) body,
+) {
   fakeAsync((async) {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     MockCarePlatform? platform;
@@ -56,7 +58,11 @@ void driveToActive(FakeAsync async, MockCarePlatform platform) {
 void main() {
   test('auth: sign up and sign out update the current user', () {
     withPlatform((async, platform) {
-      platform.signUp(name: 'Vincent', email: 'vincent@example.com', password: 'secret1');
+      platform.signUp(
+        name: 'Vincent',
+        email: 'vincent@example.com',
+        password: 'secret1',
+      );
       async.elapse(const Duration(seconds: 1));
       expect(platform.currentUser, isNotNull);
       expect(platform.currentUser!.name, 'Vincent');
@@ -245,7 +251,10 @@ void main() {
       async.flushMicrotasks();
       expect(platform.activeBooking, isNull);
       expect(history.single.status, BookingStatus.cancelled);
-      expect(history.single.cancellationReason, CancellationReason.userCancelled);
+      expect(
+        history.single.cancellationReason,
+        CancellationReason.userCancelled,
+      );
     });
   });
 
@@ -267,7 +276,7 @@ void main() {
   test('reporting an incident refunds the full amount', () {
     withPlatform((async, platform) {
       driveToActive(async, platform);
-      final total = platform.activeBooking!.price!.total;
+      final total = platform.activeBooking!.price!.serviceTotal;
       var history = <Booking>[];
       platform.watchBookingHistory().listen((value) => history = value);
       async.flushMicrotasks();

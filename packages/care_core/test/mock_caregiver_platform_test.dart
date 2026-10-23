@@ -106,9 +106,8 @@ void main() {
     );
 
     await platform.submitVerification(
-      studentIdNumber: '1806123456',
-      university: 'Universitas Indonesia',
-      documentLabel: 'KTM.jpg',
+      residentialIdNumber: '1806123456',
+      documentLabel: 'identity-card.jpg',
     );
     expect(platform.currentCaregiver!.verificationStatus,
         VerificationStatus.pending);
@@ -135,9 +134,8 @@ void main() {
     platform.setNextVerificationFails(true);
 
     await platform.submitVerification(
-      studentIdNumber: '1806123456',
-      university: 'Universitas Indonesia',
-      documentLabel: 'KTM.jpg',
+      residentialIdNumber: '1806123456',
+      documentLabel: 'identity-card.jpg',
     );
     await wait();
 

@@ -18,23 +18,23 @@ class BookingUpdate {
   final DateTime at;
 
   Map<String, Object?> toJson() => {
-        'status': status.name,
-        'message': message,
-        'at': at.toIso8601String(),
-      };
+    'status': status.name,
+    'message': message,
+    'at': at.toIso8601String(),
+  };
 
   factory BookingUpdate.fromJson(Map<String, Object?> json) => BookingUpdate(
-        status: BookingStatus.values.byName(json['status']! as String),
-        message: json['message']! as String,
-        at: DateTime.parse(json['at']! as String),
-      );
+    status: BookingStatus.values.byName(json['status']! as String),
+    message: json['message']! as String,
+    at: DateTime.parse(json['at']! as String),
+  );
 }
 
 /// A paid care request and its full lifecycle.
 ///
 /// This single model is shared by Care-Flash and Care-Merchant. Fields the
-/// caregiver must not see before acceptance ([location] before confirmation and
-/// [clientCode] before arrival) are documented where they are used. (FR-P-7)
+/// caregiver must not see before acceptance ([location] before confirmation).
+/// The caregiver verification code is disclosed only at arrival. (FR-P-7)
 class Booking {
   const Booking({
     required this.id,
@@ -91,8 +91,8 @@ class Booking {
   /// (FR-P-21, FR-P-22, FR-P-24)
   final int? caregiverPayout;
 
-  /// Private client verification code, generated after payment and shown only to
-  /// the care seeker until presented at arrival. (FR-CS-12, FR-P-15)
+  /// One-time caregiver verification code. The caregiver sees it at arrival;
+  /// seeker snapshots never include this value.
   final String? clientCode;
 
   final BookingStatus status;
@@ -110,17 +110,8 @@ class Booking {
   /// True when the booking is ready to be paid. (FR-CS-11)
   bool get isPayable => status == BookingStatus.matched && price != null;
 
-  /// True when the care seeker can show the client code. (FR-CS-12)
-  bool get hasClientCode =>
-      clientCode != null &&
-      (status == BookingStatus.paidPending ||
-          status == BookingStatus.confirmed ||
-          status == BookingStatus.caregiverTravelling ||
-          status == BookingStatus.arrived);
-
   /// True when the care seeker can scan the safety button. (FR-CS-13)
-  bool get canVerifyButton =>
-      status == BookingStatus.arrived || status == BookingStatus.codeVerified;
+  bool get canVerifyButton => status == BookingStatus.codeVerified;
 
   /// True while the session is running, so Report and End Early are available.
   /// (FR-CS-16, FR-CS-17, UI-CS-2)
@@ -179,21 +170,28 @@ class Booking {
       genderFilter: genderFilter ?? this.genderFilter,
       caregiver: caregiver == _unset ? this.caregiver : caregiver as Caregiver?,
       price: price == _unset ? this.price : price as PriceBreakdown?,
-      paymentMethod:
-          paymentMethod == _unset ? this.paymentMethod : paymentMethod as PaymentMethod?,
-      paymentStatus:
-          paymentStatus == _unset ? this.paymentStatus : paymentStatus as PaymentStatus?,
-      refundAmount:
-          refundAmount == _unset ? this.refundAmount : refundAmount as int?,
-      caregiverPayout:
-          caregiverPayout == _unset ? this.caregiverPayout : caregiverPayout as int?,
-      clientCode: clientCode == _unset ? this.clientCode : clientCode as String?,
+      paymentMethod: paymentMethod == _unset
+          ? this.paymentMethod
+          : paymentMethod as PaymentMethod?,
+      paymentStatus: paymentStatus == _unset
+          ? this.paymentStatus
+          : paymentStatus as PaymentStatus?,
+      refundAmount: refundAmount == _unset
+          ? this.refundAmount
+          : refundAmount as int?,
+      caregiverPayout: caregiverPayout == _unset
+          ? this.caregiverPayout
+          : caregiverPayout as int?,
+      clientCode: clientCode == _unset
+          ? this.clientCode
+          : clientCode as String?,
       status: status ?? this.status,
       cancellationReason: cancellationReason == _unset
           ? this.cancellationReason
           : cancellationReason as CancellationReason?,
-      safetyButtonId:
-          safetyButtonId == _unset ? this.safetyButtonId : safetyButtonId as String?,
+      safetyButtonId: safetyButtonId == _unset
+          ? this.safetyButtonId
+          : safetyButtonId as String?,
       outcome: outcome == _unset ? this.outcome : outcome as SessionOutcome?,
       createdAt: createdAt,
       updates: updates ?? this.updates,
@@ -205,29 +203,29 @@ class Booking {
       copyWith(updates: [...updates, update]);
 
   Map<String, Object?> toJson() => {
-        'id': id,
-        'requestReference': requestReference,
-        'helpType': helpType.name,
-        'description': description,
-        'checklist': checklist.toJson(),
-        'location': location.toJson(),
-        'scheduledAt': scheduledAt.toIso8601String(),
-        'duration': duration.name,
-        'genderFilter': genderFilter.name,
-        'caregiver': caregiver?.toJson(),
-        'price': price?.toJson(),
-        'paymentMethod': paymentMethod?.toJson(),
-        'paymentStatus': paymentStatus?.name,
-        'refundAmount': refundAmount,
-        'caregiverPayout': caregiverPayout,
-        'clientCode': clientCode,
-        'status': status.name,
-        'cancellationReason': cancellationReason?.name,
-        'safetyButtonId': safetyButtonId,
-        'outcome': outcome?.name,
-        'createdAt': createdAt.toIso8601String(),
-        'updates': updates.map((update) => update.toJson()).toList(),
-      };
+    'id': id,
+    'requestReference': requestReference,
+    'helpType': helpType.name,
+    'description': description,
+    'checklist': checklist.toJson(),
+    'location': location.toJson(),
+    'scheduledAt': scheduledAt.toIso8601String(),
+    'duration': duration.name,
+    'genderFilter': genderFilter.name,
+    'caregiver': caregiver?.toJson(),
+    'price': price?.toJson(),
+    'paymentMethod': paymentMethod?.toJson(),
+    'paymentStatus': paymentStatus?.name,
+    'refundAmount': refundAmount,
+    'caregiverPayout': caregiverPayout,
+    'clientCode': clientCode,
+    'status': status.name,
+    'cancellationReason': cancellationReason?.name,
+    'safetyButtonId': safetyButtonId,
+    'outcome': outcome?.name,
+    'createdAt': createdAt.toIso8601String(),
+    'updates': updates.map((update) => update.toJson()).toList(),
+  };
 
   factory Booking.fromJson(Map<String, Object?> json) {
     final caregiverJson = json['caregiver'];
@@ -245,7 +243,9 @@ class Booking {
       checklist: BoundaryChecklist.fromJson(
         json['checklist']! as Map<String, Object?>,
       ),
-      location: VisitLocation.fromJson(json['location']! as Map<String, Object?>),
+      location: VisitLocation.fromJson(
+        json['location']! as Map<String, Object?>,
+      ),
       scheduledAt: DateTime.parse(json['scheduledAt']! as String),
       duration: VisitDuration.values.byName(json['duration']! as String),
       genderFilter: GenderFilter.values.byName(json['genderFilter']! as String),
