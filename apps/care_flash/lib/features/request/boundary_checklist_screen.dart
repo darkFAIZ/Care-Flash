@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -56,7 +57,6 @@ class _BoundaryChecklistScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return WizardScaffold(
       title: 'Set your boundaries',
       step: 2,
@@ -67,28 +67,30 @@ class _BoundaryChecklistScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _SectionHeader(
+          const SectionHeader(
             title: 'Allowed during the visit',
             subtitle: 'Tick what the caregiver may do. (FR-CS-5)',
           ),
+          const SizedBox(height: AppSpacing.xs),
           for (final task in BoundaryChecklist.standardAllowedTasks)
             CheckboxListTile(
               value: _allowed.contains(task),
-              title: Text(task),
+              title: AppText(task),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (checked) => setState(() {
                 checked == true ? _allowed.add(task) : _allowed.remove(task);
               }),
             ),
-          const SizedBox(height: 12),
-          _SectionHeader(
+          const SizedBox(height: AppSpacing.md),
+          const SectionHeader(
             title: 'Not allowed',
             subtitle: 'Kept off limits for your safety.',
           ),
+          const SizedBox(height: AppSpacing.xs),
           for (final task in BoundaryChecklist.standardDisallowedTasks)
             CheckboxListTile(
               value: _disallowed.contains(task),
-              title: Text(task),
+              title: AppText(task),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (checked) => setState(() {
                 checked == true
@@ -96,54 +98,26 @@ class _BoundaryChecklistScreenState
                     : _disallowed.remove(task);
               }),
             ),
-          const SizedBox(height: 12),
-          _SectionHeader(title: 'Off-limit rooms'),
+          const SizedBox(height: AppSpacing.md),
+          const SectionHeader(title: 'Off-limit rooms'),
+          const SizedBox(height: AppSpacing.xs),
           for (final room in OffLimitRoom.values)
             CheckboxListTile(
               value: _offLimit.contains(room),
-              title: Text(room.label),
+              title: AppText(room.label),
               controlAffinity: ListTileControlAffinity.leading,
               onChanged: (checked) => setState(() {
                 checked == true ? _offLimit.add(room) : _offLimit.remove(room);
               }),
             ),
-          const SizedBox(height: 12),
-          Text('Other boundaries (optional)', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          TextField(
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
             controller: _note,
+            label: 'Other boundaries (optional)',
+            hint: 'e.g. no shoes indoors',
             maxLines: 2,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(hintText: 'e.g. no shoes indoors'),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
         ],
       ),
     );

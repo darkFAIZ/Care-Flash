@@ -25,6 +25,10 @@ class SupabaseCareSeekerPlatform implements CareSeekerPlatform {
   @override
   Future<void> signOut() => _store.signOut();
   @override
+  Future<void> updateProfile({required String name}) => _store.updateProfile(name: name);
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) => _store.updateAvatar(avatarDataUrl: avatarDataUrl);
+  @override
   Booking? get activeBooking => _store.activeSeekerBooking;
   @override
   Stream<Booking?> watchActiveBooking() async* { yield _store.activeSeekerBooking; yield* _store.seekerBookingChanges.stream; }
@@ -122,6 +126,10 @@ class SupabaseCaregiverPlatform implements CaregiverPlatform {
   Future<void> submitVerification({required String residentialIdNumber, required String documentLabel}) =>
       _store.submitCaregiverVerification();
   @override
+  Future<void> updateProfile({required String name}) => _store.updateProfile(name: name);
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) => _store.updateAvatar(avatarDataUrl: avatarDataUrl);
+  @override
   Future<void> completeSafetyModule() => _store.completeSafetyModule();
   @override
   Future<void> updateGender(Gender gender) => _store.updateGender(gender);
@@ -138,6 +146,9 @@ class SupabaseCaregiverPlatform implements CaregiverPlatform {
   @override
   Future<void> declineRequest() => _store.action('decline');
   @override
+  Future<ButtonVerificationResult> verifyClientCode(String code) async =>
+      ButtonVerificationResult.failed('The care seeker confirms the caregiver code in Care-Flash.');
+  @override
   Future<void> reportDanger(String description) => _store.action('report', {'description': description});
   @override
   Future<void> startTrip() => _store.action('startTrip');
@@ -150,13 +161,13 @@ class SupabaseCaregiverPlatform implements CaregiverPlatform {
   @override
   Future<void> reportCareSeeker(IncidentReport report) => _store.action('report', report.toJson());
   @override
-  Stream<EarningsSummary> watchEarnings() => Stream.value(const EarningsSummary());
+  Stream<EarningsSummary> watchEarnings() => _store.earningsStream;
   @override
   Future<WithdrawalResult> requestWithdrawal(int amount) => Future.value(const WithdrawalResult.failed('Payouts are not configured yet.'));
   @override
-  Stream<List<FeedbackReceived>> watchFeedbackReceived() => Stream.value(const []);
+  Stream<List<FeedbackReceived>> watchFeedbackReceived() => _store.feedbackStream;
   @override
-  Stream<List<CareSeekerRating>> watchCareSeekerRatings() => Stream.value(const []);
+  Stream<List<CareSeekerRating>> watchCareSeekerRatings() => _store.careSeekerRatingsStream;
   @override
   Future<void> rateCareSeeker(CareSeekerRating rating) =>
       _store.saveRating('care_seeker_ratings', rating.toJson());
@@ -197,6 +208,12 @@ class _CareStore {
         table: 'profiles',
         callback: (_) => refresh(),
       )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'care_ratings',
+        callback: (_) => refresh(),
+      )
       ..subscribe();
     client.auth.onAuthStateChange.listen((_) => refresh());
     ready = refresh();
@@ -210,6 +227,9 @@ class _CareStore {
   Booking? incoming;
   List<Booking> seekerHistory = const [];
   List<Booking> caregiverHistory = const [];
+  EarningsSummary earnings = const EarningsSummary();
+  List<FeedbackReceived> feedback = const [];
+  List<CareSeekerRating> careSeekerRatings = const [];
   final seekerChanges = StreamController<CareSeeker?>.broadcast();
   final caregiverChanges = StreamController<CaregiverAccount?>.broadcast();
   final seekerBookingChanges = StreamController<Booking?>.broadcast();
@@ -217,7 +237,25 @@ class _CareStore {
   final incomingChanges = StreamController<Booking?>.broadcast();
   final seekerHistoryChanges = StreamController<List<Booking>>.broadcast();
   final caregiverHistoryChanges = StreamController<List<Booking>>.broadcast();
+  final earningsChanges = StreamController<EarningsSummary>.broadcast();
+  final feedbackChanges = StreamController<List<FeedbackReceived>>.broadcast();
+  final careSeekerRatingsChanges = StreamController<List<CareSeekerRating>>.broadcast();
   bool _refreshing = false;
+
+  Stream<EarningsSummary> get earningsStream async* {
+    yield earnings;
+    yield* earningsChanges.stream;
+  }
+
+  Stream<List<FeedbackReceived>> get feedbackStream async* {
+    yield feedback;
+    yield* feedbackChanges.stream;
+  }
+
+  Stream<List<CareSeekerRating>> get careSeekerRatingsStream async* {
+    yield careSeekerRatings;
+    yield* careSeekerRatingsChanges.stream;
+  }
 
   Future<void> refresh() async {
     if (_refreshing || client.auth.currentUser == null) return;
@@ -229,7 +267,7 @@ class _CareStore {
       final name = profile['full_name'] as String? ?? '';
       final email = client.auth.currentUser?.email ?? '';
       if (role == 'seeker') {
-        seeker = CareSeeker(id: profile['id'] as String, name: name, email: email, phone: profile['phone'] as String?);
+        seeker = CareSeeker(id: profile['id'] as String, name: name, email: email, phone: profile['phone'] as String?, avatarDataUrl: profile['avatar_data_url'] as String?);
         seekerChanges.add(seeker);
       } else {
         final cp = await client.from('caregiver_profiles').select().eq('user_id', profile['id'] as String).maybeSingle();
@@ -241,6 +279,7 @@ class _CareStore {
             verificationStatus: _verification(cp['verification_status'] as String),
             safetyModuleCompleted: cp['safety_module_completed'] as bool,
             availability: (cp['availability'] as String) == 'available' ? CaregiverAvailability.available : CaregiverAvailability.unavailable,
+            avatarDataUrl: profile['avatar_data_url'] as String?,
           );
           caregiverChanges.add(caregiver);
         }
@@ -260,12 +299,78 @@ class _CareStore {
         incomingChanges.add(incoming);
         caregiverBookingChanges.add(activeCaregiverBooking);
         caregiverHistoryChanges.add(caregiverHistory);
+        await _refreshCaregiverExtras(bookings);
       }
     } catch (_) {
       // The connection screen and explicit user actions surface request errors.
     } finally {
       _refreshing = false;
     }
+  }
+
+  Future<void> _refreshCaregiverExtras(List<Booking> bookings) async {
+    final rows = await client.from('care_ratings').select().order('created_at', ascending: false);
+    final references = {for (final booking in bookings) booking.id: booking.requestReference};
+    final feedback = <FeedbackReceived>[];
+    final seekerRatings = <CareSeekerRating>[];
+    for (final item in rows as List) {
+      final row = Map<String, Object?>.from(item as Map);
+      final payload = Map<String, Object?>.from(row['payload'] as Map);
+      final bookingId = row['booking_id'] as String;
+      if (row['kind'] == 'caregiver_ratings') {
+        feedback.add(FeedbackReceived(
+          bookingId: bookingId,
+          reference: references[bookingId] ?? bookingId,
+          stars: payload['stars'] as int,
+          comment: payload['comment'] as String?,
+          receivedAt: DateTime.parse(row['created_at'] as String),
+        ));
+      } else if (row['kind'] == 'care_seeker_ratings') {
+        seekerRatings.add(CareSeekerRating(
+          bookingId: bookingId,
+          reference: references[bookingId] ?? bookingId,
+          stars: payload['stars'] as int,
+          comment: payload['comment'] as String?,
+        ));
+      }
+    }
+    this.feedback = feedback;
+    careSeekerRatings = seekerRatings;
+    feedbackChanges.add(this.feedback);
+    careSeekerRatingsChanges.add(careSeekerRatings);
+
+    final entries = <EarningEntry>[];
+    for (final booking in bookings.where((item) => item.status.isFinished)) {
+      final price = booking.price;
+      if (price == null) continue;
+      final (kind, amount) = switch (booking.status) {
+        BookingStatus.completed => (EarningKind.session, price.caregiverPrice),
+        BookingStatus.endedEarly => (
+            EarningKind.earlyEndCompensation,
+            Pricing.earlyEndCompensation(price),
+          ),
+        BookingStatus.caregiverSos => (
+            EarningKind.sosCompensation,
+            RefundPolicy.caregiverCompensationFor(booking),
+          ),
+        _ => (null, 0),
+      };
+      if (kind != null && amount > 0) {
+        entries.add(EarningEntry(
+          id: booking.id,
+          bookingId: booking.id,
+          reference: booking.requestReference,
+          kind: kind,
+          amount: amount,
+          at: booking.createdAt,
+        ));
+      }
+    }
+    earnings = EarningsSummary(
+      earnings: entries,
+      pendingBalance: activeCaregiverBooking?.price?.caregiverPrice ?? 0,
+    );
+    earningsChanges.add(earnings);
   }
 
   Future<Booking> _booking(Map<String, Object?> row) async {
@@ -334,6 +439,21 @@ class _CareStore {
     seekerChanges.add(null); caregiverChanges.add(null); seekerBookingChanges.add(null); caregiverBookingChanges.add(null); incomingChanges.add(null);
   }
 
+  Future<void> updateProfile({required String name}) async {
+    final normalized = name.trim();
+    if (normalized.isEmpty) throw ArgumentError('Name cannot be empty.');
+    await client.from('profiles').update({'full_name': normalized}).eq('id', client.auth.currentUser!.id);
+    await refresh();
+  }
+
+  Future<void> updateAvatar({String? avatarDataUrl}) async {
+    if (avatarDataUrl != null && avatarDataUrl.length > 1_000_000) {
+      throw ArgumentError('Profile photo must be smaller than 1 MB.');
+    }
+    await client.from('profiles').update({'avatar_data_url': avatarDataUrl}).eq('id', client.auth.currentUser!.id);
+    await refresh();
+  }
+
   Future<Booking> submitRequest(HelpRequest request) async {
     final id = await client.rpc('create_care_request', params: {'p_payload': {
       'helpType': request.helpType.name, 'description': request.description,
@@ -370,7 +490,7 @@ class _CareStore {
     await client.rpc('complete_caregiver_safety_module');
     await refresh();
   }
-  Future<void> saveRating(String table, Map<String, Object?> value) async { await client.rpc('save_care_rating', params: {'p_rating': value, 'p_kind': table}); }
+  Future<void> saveRating(String table, Map<String, Object?> value) async { await client.rpc('save_care_rating', params: {'p_rating': value, 'p_kind': table}); await refresh(); }
   Future<void> saveFeedback(Map<String, Object?> value) async { await client.rpc('save_app_feedback', params: {'p_feedback': value}); }
   String _message(Object error) => error is AuthException ? error.message : error.toString();
 }

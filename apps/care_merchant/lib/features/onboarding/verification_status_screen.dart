@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,7 +27,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final status = caregiver.verificationStatus;
     final (icon, color) = switch (status) {
-      VerificationStatus.pending => (Icons.hourglass_top, theme.colorScheme.primary),
+      VerificationStatus.pending => (Icons.hourglass_top_rounded, theme.colorScheme.primary),
       VerificationStatus.approved => (Icons.verified_outlined, theme.colorScheme.primary),
       VerificationStatus.rejected => (Icons.error_outline, theme.colorScheme.error),
       VerificationStatus.notSubmitted => (Icons.info_outline, theme.colorScheme.onSurfaceVariant),
@@ -34,83 +35,79 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final message = switch (status) {
       VerificationStatus.pending =>
-        'Your demo verification request is pending. An administrator must approve this test caregiver in Supabase before they can receive requests. '
-            'The app does not upload or store identity card images.',
+        'Your Residential ID is being reviewed. This usually takes a short while. '
+            'You will be able to receive requests once you are verified.',
       VerificationStatus.approved =>
         'You are verified. You can now complete the safety module and start '
             'receiving requests.',
       VerificationStatus.rejected =>
         caregiver.rejectionReason ?? 'Your submission was not accepted.',
       VerificationStatus.notSubmitted =>
-        'You have not submitted your residential ID and identity card yet.',
+        'You have not submitted your Residential ID yet.',
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verification status')),
+      appBar: AppBar(title: const AppText('Verification status')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.page,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Icon(icon, size: 64, color: color),
-                  const SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: AppSpacing.lg),
+                  AppText(
                     status.label,
                     style: theme.textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
+                  const SizedBox(height: AppSpacing.md),
+                  AppText(
                     message,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: status == VerificationStatus.rejected
-                          ? theme.colorScheme.error
+                          ? AppSemanticColors.of(context).danger
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (caregiver.residentialIdNumber != null || caregiver.identityCardLabel != null) ...[
-                    const SizedBox(height: 24),
-                    Card(
+                  if (caregiver.residentialIdNumber != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    AppCard(
+                      padding: EdgeInsets.zero,
                       child: ListTile(
                         leading: const Icon(Icons.badge_outlined),
-                        title: const Text('Identity details submitted'),
-                        subtitle: Text([
-                          if (caregiver.residentialIdNumber != null)
-                            'Residential ID ${caregiver.residentialIdNumber}',
-                          if (caregiver.identityCardLabel != null)
-                            'Identity card: ${caregiver.identityCardLabel}',
-                        ].join('\n')),
+                        title: AppText('Residential ID ${_maskedResidentialId(caregiver.residentialIdNumber!)}'),
+                        subtitle: const AppText(
+                          'This prototype does not upload or store your Residential ID.',
+                        ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
                   if (status == VerificationStatus.approved) ...[
-                    FilledButton(
+                    AppButton(
+                      label: caregiver.safetyModuleCompleted
+                          ? 'Continue to requests'
+                          : 'Continue to the safety module',
                       onPressed: caregiver.safetyModuleCompleted
                           ? () => context.go(HomeShell.route)
                           : () => context.go(SafetyModuleScreen.route),
-                      child: Text(
-                        caregiver.safetyModuleCompleted
-                            ? 'Continue to requests'
-                            : 'Continue to the safety module',
-                      ),
                     ),
                   ] else if (status == VerificationStatus.rejected ||
                       status == VerificationStatus.notSubmitted) ...[
-                    FilledButton(
+                    AppButton(
+                      label: 'Resubmit your Residential ID',
                       onPressed: () => context.go(OnboardingScreen.route),
-                      child: const Text('Resubmit identity details'),
                     ),
                   ] else if (status == VerificationStatus.pending) ...[
                     // The review completes on its own; watch the caregiver so
                     // this screen updates when it is approved.
-                    const SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(
                       'Waiting for review…',
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
@@ -124,4 +121,13 @@ class VerificationStatusScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Shows only the last four digits, e.g. `•••• •••• •••• 1234`.
+String _maskedResidentialId(String idNumber) {
+  final digits = idNumber.trim();
+  if (digits.length <= 4) {
+    return digits;
+  }
+  return '•••• •••• •••• ${digits.substring(digits.length - 4)}';
 }

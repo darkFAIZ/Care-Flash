@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:care_core/care_core.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -49,62 +50,35 @@ final careSeekerRatingsProvider = StreamProvider<List<CareSeekerRating>>((ref) {
   return ref.watch(platformProvider).watchCareSeekerRatings();
 });
 
+/// Preferences loaded in main(). Widget tests do not call main(), so the
+/// cache stays null there and the app falls back to English.
+SharedPreferences? _preferences;
+
+Future<void> loadPreferences() async {
+  _preferences ??= await SharedPreferences.getInstance();
+}
+
+/// The selected app language. The choice is saved on this device. (FR-CM-3)
 class LanguageController extends Notifier<AppLanguage> {
+  static const _preferenceKey = 'app.language';
+
   @override
   AppLanguage build() {
-    _restore();
+    final code = _preferences?.getString(_preferenceKey);
+    for (final language in AppLanguage.values) {
+      if (language.code == code) return language;
+    }
     return AppLanguage.english;
   }
 
-  Future<void> select(AppLanguage value) async {
-    state = value;
-    await (await SharedPreferences.getInstance()).setString(
-      'care_merchant.language',
-      value.code,
-    );
-  }
-
-  Future<void> _restore() async {
-    final code = (await SharedPreferences.getInstance()).getString(
-      'care_merchant.language',
-    );
-    final saved = AppLanguage.values
-        .where((item) => item.code == code)
-        .firstOrNull;
-    if (saved != null) state = saved;
+  void select(AppLanguage language) {
+    state = language;
+    final preferences = _preferences;
+    if (preferences != null) {
+      unawaited(preferences.setString(_preferenceKey, language.code));
+    }
   }
 }
 
-final languageProvider = NotifierProvider<LanguageController, AppLanguage>(
-  LanguageController.new,
-);
-
-class ThemeModeController extends Notifier<ThemeMode> {
-  @override
-  ThemeMode build() {
-    _restore();
-    return ThemeMode.system;
-  }
-
-  Future<void> select(ThemeMode value) async {
-    state = value;
-    await (await SharedPreferences.getInstance()).setString(
-      'care_merchant.theme',
-      value.name,
-    );
-  }
-
-  Future<void> _restore() async {
-    final value = (await SharedPreferences.getInstance()).getString(
-      'care_merchant.theme',
-    );
-    final saved = ThemeMode.values
-        .where((mode) => mode.name == value)
-        .firstOrNull;
-    if (saved != null) state = saved;
-  }
-}
-
-final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
-  ThemeModeController.new,
-);
+final languageProvider =
+    NotifierProvider<LanguageController, AppLanguage>(LanguageController.new);

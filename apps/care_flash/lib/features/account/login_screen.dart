@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.page,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -73,27 +74,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       size: 56,
                       color: theme.colorScheme.primary,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppText(
                       'Welcome back',
                       style: theme.textTheme.headlineSmall,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: AppSpacing.xs),
+                    AppText(
                       'Sign in to request and manage help.',
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.xl),
+                    AppTextField(
                       controller: _email,
+                      label: 'Email',
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
-                      ),
+                      prefixIcon: Icons.mail_outline,
                       validator: (value) {
                         if (value == null || !value.contains('@')) {
                           return 'Enter a valid email address';
@@ -101,47 +100,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
                       controller: _password,
+                      label: 'Password',
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
+                      prefixIcon: Icons.lock_outline,
                       validator: (value) {
                         if (value == null || value.length < 6) {
                           return 'Password must be at least 6 characters';
                         }
                         return null;
                       },
-                      onFieldSubmitted: (_) => _submit(),
+                      onSubmitted: (_) => _submit(),
                     ),
                     if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: AppSpacing.lg),
+                      AppText(
                         _error!,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.colorScheme.error),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppSemanticColors.of(context).danger,
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    FilledButton(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(
+                      label: 'Sign in',
+                      loading: _busy,
                       onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Sign in'),
                     ),
-                    const SizedBox(height: 8),
-                    TextButton(
+                    const SizedBox(height: AppSpacing.sm),
+                    AppButton(
+                      label: 'Create an account',
+                      variant: AppButtonVariant.ghost,
                       onPressed: _busy
                           ? null
                           : () => context.push(CreateAccountScreen.route),
-                      child: const Text('Create an account'),
                     ),
                   ],
                 ),

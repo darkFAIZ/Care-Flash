@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,34 +12,36 @@ class ActivityTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final booking = ref.watch(activeBookingProvider).value;
     final history = ref.watch(bookingHistoryProvider).value ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Activity')),
+      appBar: AppBar(title: const AppText('Activity')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
-          Text('Ongoing activity', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SectionHeader(title: 'Ongoing activity'),
+          const SizedBox(height: AppSpacing.xs),
           if (booking == null)
-            _EmptyCard(message: 'You have no ongoing activity right now.')
+            _EmptyCard(
+              message: 'You have no ongoing activity right now.',
+            )
           else
-            Card(
+            AppCard(
+              padding: EdgeInsets.zero,
               child: ListTile(
-                leading: const Icon(Icons.schedule),
-                title: Text(booking.status.label),
-                subtitle: Text(booking.helpType.label),
-                trailing: const Icon(Icons.chevron_right),
+                leading: const Icon(Icons.schedule_rounded),
+                title: AppText(booking.status.label),
+                subtitle: AppText(booking.helpType.label),
+                trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => context.push(
                   booking.status.isSessionStarted ? '/session' : '/caregiver',
                 ),
               ),
             ),
-          const SizedBox(height: 24),
-          Text('Past bookings', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionHeader(title: 'Past bookings'),
+          const SizedBox(height: AppSpacing.xs),
           if (history.isEmpty)
             _EmptyCard(message: 'Your finished bookings will appear here.')
           else
@@ -56,16 +59,15 @@ class _EmptyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            const Icon(Icons.inbox_outlined),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
+    final theme = Theme.of(context);
+    return AppCard(
+      compact: true,
+      child: Row(
+        children: [
+          Icon(Icons.inbox_outlined, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: AppText(message)),
+        ],
       ),
     );
   }
@@ -81,27 +83,33 @@ class _HistoryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final price = booking.price;
     final showPayment = booking.paymentStatus != null || booking.hasRefund;
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.history),
-        title: Text(booking.helpType.label),
-        isThreeLine: showPayment,
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${booking.status.label} · ${_formatDate(booking.createdAt)}'),
-            if (showPayment) ...[
-              const SizedBox(height: 4),
-              _PaymentLine(booking: booking),
-            ],
-          ],
-        ),
-        trailing: price == null
-            ? null
-            : Text(
-                formatIdr(price.serviceTotal),
-                style: theme.textTheme.bodyMedium,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        child: ListTile(
+          leading: const Icon(Icons.history_rounded),
+          title: AppText(booking.helpType.label),
+          isThreeLine: showPayment,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText(
+                '${booking.status.label} · ${_formatDate(booking.createdAt)}',
               ),
+              if (showPayment) ...[
+                const SizedBox(height: AppSpacing.xs),
+                _PaymentLine(booking: booking),
+              ],
+            ],
+          ),
+          trailing: price == null
+              ? null
+              : AppText(
+                  formatIdr(price.total),
+                  style: theme.textTheme.bodyMedium,
+                ),
+        ),
       ),
     );
   }
@@ -128,10 +136,10 @@ class _PaymentLine extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.replay, size: 14, color: theme.colorScheme.primary),
-          const SizedBox(width: 4),
+          Icon(Icons.replay_rounded, size: 14, color: theme.colorScheme.primary),
+          const SizedBox(width: AppSpacing.xs),
           Flexible(
-            child: Text(
+            child: AppText(
               '${full ? 'Refunded' : 'Partly refunded'} · '
               '${formatIdr(booking.refundAmount!)}',
               style: theme.textTheme.labelSmall?.copyWith(
@@ -142,7 +150,7 @@ class _PaymentLine extends StatelessWidget {
         ],
       );
     }
-    return Text(
+    return AppText(
       booking.paymentStatus!.label,
       style: theme.textTheme.labelSmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,

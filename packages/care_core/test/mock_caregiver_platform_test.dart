@@ -106,8 +106,8 @@ void main() {
     );
 
     await platform.submitVerification(
-      residentialIdNumber: '1806123456',
-      documentLabel: 'identity-card.jpg',
+      residentialIdNumber: '3174012501990001',
+      documentLabel: 'Residential ID.jpg',
     );
     expect(platform.currentCaregiver!.verificationStatus,
         VerificationStatus.pending);
@@ -134,8 +134,8 @@ void main() {
     platform.setNextVerificationFails(true);
 
     await platform.submitVerification(
-      residentialIdNumber: '1806123456',
-      documentLabel: 'identity-card.jpg',
+      residentialIdNumber: '3174012501990001',
+      documentLabel: 'Residential ID.jpg',
     );
     await wait();
 

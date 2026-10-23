@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,34 +45,35 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Report a safety concern'),
+        title: const AppText('Report a safety concern'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            const AppText(
               'If you feel unsafe before the session, tell us what is '
               'happening. The booking will be cancelled and support notified.',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: controller,
               maxLines: 3,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'Describe the concern',
-              ),
+              decoration: InputDecoration(hintText: trText(context, 'Describe the concern')),
             ),
           ],
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'Send report',
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Send report'),
           ),
         ],
       ),
@@ -84,9 +86,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       return;
     }
     await _run(
-      () => ref
-          .read(platformProvider)
-          .reportDanger(
+      () => ref.read(platformProvider).reportDanger(
             description.isEmpty ? 'Safety concern reported.' : description,
           ),
     );
@@ -98,50 +98,30 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final booking = ref.watch(activeBookingProvider).value;
 
     if (booking == null) {
       return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Booking'),
+          title: const AppText('Booking'),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 56,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'This booking is closed.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        body: EmptyState(
+          icon: Icons.check_circle_outline,
+          title: 'This booking is closed.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(booking.status.label),
+        title: AppText(booking.status.label),
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
@@ -152,47 +132,50 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.page,
                 children: [
+                  if (kDebugMode && booking.clientCode != null)
+                    _ClientCodeDebug(clientCode: booking.clientCode!),
                   _TripCard(booking: booking),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _BookingDetailsCard(booking: booking),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   BoundaryChecklistCard(checklist: booking.checklist),
                 ],
               ),
             ),
-            _actions(theme, booking),
+            _actions(booking),
           ],
         ),
       ),
     );
   }
 
-  Widget _actions(ThemeData theme, Booking booking) {
+  Widget _actions(Booking booking) {
     final (label, onPressed) = _primaryAction(booking);
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageGutter,
+        AppSpacing.sm,
+        AppSpacing.pageGutter,
+        AppSpacing.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_canReportDanger(booking))
-            OutlinedButton.icon(
+            AppButton(
+              label: 'Report a safety concern',
+              icon: Icons.report_problem_outlined,
+              variant: AppButtonVariant.danger,
               onPressed: _busy ? null : _reportDanger,
-              icon: const Icon(Icons.report_problem_outlined),
-              label: const Text('Report a safety concern'),
             ),
-          if (_canReportDanger(booking)) const SizedBox(height: 8),
-          FilledButton(
+          if (_canReportDanger(booking)) const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: label,
+            loading: _busy,
             onPressed: _busy ? null : onPressed,
-            child: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(label),
           ),
         ],
       ),
@@ -200,37 +183,61 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
   }
 
   bool _canReportDanger(Booking booking) => switch (booking.status) {
-    BookingStatus.confirmed ||
-    BookingStatus.caregiverTravelling ||
-    BookingStatus.arrived ||
-    BookingStatus.codeVerified => true,
-    _ => false,
-  };
+        BookingStatus.confirmed ||
+        BookingStatus.caregiverTravelling ||
+        BookingStatus.arrived ||
+        BookingStatus.codeVerified =>
+          true,
+        _ => false,
+      };
 
   (String, VoidCallback) _primaryAction(Booking booking) {
     return switch (booking.status) {
       BookingStatus.confirmed => (
-        'I\'m on my way',
-        () => _run(ref.read(platformProvider).startTrip),
-      ),
+          'I\'m on my way',
+          () => _run(ref.read(platformProvider).startTrip),
+        ),
       BookingStatus.caregiverTravelling => (
-        'I\'ve arrived',
-        () => _run(ref.read(platformProvider).markArrived),
-      ),
+          'I\'ve arrived',
+          () => _run(ref.read(platformProvider).markArrived),
+        ),
       BookingStatus.arrived => (
-        'Share your identity code',
-        () => context.push(ClientCodeScreen.route),
-      ),
+          'Share your caregiver code',
+          () => context.push(ClientCodeScreen.route),
+        ),
       BookingStatus.codeVerified => (
-        'Safety button handover',
-        () => context.push(ButtonHandoverScreen.route),
-      ),
+          'Safety button handover',
+          () => context.push(ButtonHandoverScreen.route),
+        ),
       BookingStatus.active => (
-        'Open session',
-        () => context.push(SessionScreen.route),
-      ),
+          'Open session',
+          () => context.push(SessionScreen.route),
+        ),
       _ => ('Back home', () => context.go(HomeShell.route)),
     };
+  }
+}
+
+class _ClientCodeDebug extends StatelessWidget {
+  const _ClientCodeDebug({required this.clientCode});
+
+  final String clientCode;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Debug only: the real care seeker shows this on their own device.
+    return Card(
+      color: theme.colorScheme.tertiaryContainer,
+      child: ListTile(
+        leading: const Icon(Icons.bug_report_outlined),
+        title: const AppText('Demo: caregiver verification code'),
+        trailing: AppText(
+          clientCode,
+          style: theme.textTheme.titleMedium,
+        ),
+      ),
+    );
   }
 }
 
@@ -246,40 +253,53 @@ class _TripCard extends StatelessWidget {
     final theme = Theme.of(context);
     final (status, icon) = switch (booking.status) {
       BookingStatus.confirmed => (
-        'The care seeker orders and pays for the Grab ride.',
-        Icons.local_taxi_outlined,
-      ),
+          'Book a Grab ride to the care seeker.',
+          Icons.local_taxi_outlined,
+        ),
       BookingStatus.caregiverTravelling => (
-        'On the way. Share your trip with the platform.',
-        Icons.directions_car_filled_outlined,
-      ),
+          'On the way. Share your trip with the platform.',
+          Icons.directions_car_filled_outlined,
+        ),
       BookingStatus.arrived || BookingStatus.codeVerified => (
-        'You have arrived at the care seeker.',
-        Icons.location_on_outlined,
-      ),
+          'You have arrived at the care seeker.',
+          Icons.location_on_outlined,
+        ),
       _ => ('Trip details.', Icons.route_outlined),
     };
 
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           ListTile(
             leading: Icon(icon, color: theme.colorScheme.primary),
-            title: Text(status),
-            subtitle: const Text(
-              'Ride booking and payment happen in the care seeker’s Grab app.',
+            title: AppText(status),
+            // TODO(team): no real Grab integration in the prototype; the
+            // care seeker's mock ride supplies pickup tracking later. (FR-CM-10)
+            subtitle: const AppText('Grab integration is mocked for the demo.'),
+          ),
+          // The caregiver never pays for the ride; the care seeker settled it
+          // with the total. (FR-P-10, FR-P-11)
+          const Divider(height: 0),
+          ListTile(
+            leading: const Icon(Icons.payments_outlined),
+            title: const AppText('Ride paid by the care seeker'),
+            subtitle: const AppText(
+              "You don't pay for this trip. It is covered by the care seeker's "
+              'payment.',
             ),
+            isThreeLine: true,
           ),
           const Divider(height: 0),
           ListTile(
             leading: const Icon(Icons.my_location_outlined),
-            title: const Text('Pickup'),
-            subtitle: const Text('Your current location'),
+            title: const AppText('Pickup'),
+            subtitle: const AppText('Your current location'),
           ),
           ListTile(
             leading: const Icon(Icons.location_on_outlined),
-            title: const Text('Destination'),
-            subtitle: Text(
+            title: const AppText('Destination'),
+            subtitle: AppText(
               '${booking.location.label}\n${booking.location.address}',
             ),
             isThreeLine: true,
@@ -300,53 +320,48 @@ class _BookingDetailsCard extends StatelessWidget {
     final theme = Theme.of(context);
     final price = booking.price;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    booking.helpType.label,
-                    style: theme.textTheme.titleMedium,
-                  ),
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: AppText(
+                  booking.helpType.label,
+                  style: theme.textTheme.titleMedium,
                 ),
-                Text(
-                  booking.requestReference,
-                  style: theme.textTheme.labelLarge,
-                ),
-              ],
-            ),
-            if (booking.description != null) ...[
-              const SizedBox(height: 8),
-              Text(booking.description!, style: theme.textTheme.bodyMedium),
-            ],
-            const SizedBox(height: 12),
-            _meta(theme, Icons.schedule, booking.duration.label),
-            _meta(theme, Icons.event, formatVisitTime(booking.scheduledAt)),
-            if (price != null)
-              _meta(
-                theme,
-                Icons.payments_outlined,
-                '${formatIdr(price.caregiverPrice)} to you',
               ),
+              AppText(booking.requestReference,
+                  style: theme.textTheme.labelLarge),
+            ],
+          ),
+          if (booking.description != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            AppText(booking.description!, style: theme.textTheme.bodyMedium),
           ],
-        ),
+          const SizedBox(height: AppSpacing.md),
+          _meta(theme, Icons.schedule_rounded, booking.duration.label),
+          _meta(theme, Icons.event_rounded, formatVisitTime(booking.scheduledAt)),
+          if (price != null)
+            _meta(
+              theme,
+              Icons.payments_outlined,
+              '${formatIdr(price.caregiverPrice)} to you',
+            ),
+        ],
       ),
     );
   }
 
   Widget _meta(ThemeData theme, IconData icon, String label) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs / 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(child: AppText(label, style: theme.textTheme.bodyMedium)),
+          ],
+        ),
+      );
 }

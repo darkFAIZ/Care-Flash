@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -79,22 +80,23 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final danger = AppSemanticColors.of(context).danger;
     return Scaffold(
-      appBar: AppBar(title: const Text('Report a problem')),
+      appBar: AppBar(title: const AppText('Report a problem')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
           Card(
             color: theme.colorScheme.errorContainer,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.page,
               child: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded,
                       color: theme.colorScheme.onErrorContainer),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: Text(
+                    child: AppText(
                       'Sending a report ends the session and refunds your '
                       'payment. The safety team is notified straight away.',
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -106,69 +108,64 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text('What happened?', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionHeader(title: 'What happened?'),
+          const SizedBox(height: AppSpacing.xs),
           TextField(
             controller: _description,
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Describe the incident so support can follow up.',
+            decoration: InputDecoration(
+              hintText: trText(context, 'Describe the incident so support can follow up.'),
             ),
           ),
-          const SizedBox(height: 16),
-          Text('Evidence', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(
-            'Photos, videos and notes help support resolve this faster.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionHeader(
+            title: 'Evidence',
+            subtitle: 'Photos, videos and notes help support resolve this '
+                'faster.',
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               ActionChip(
                 avatar: const Icon(Icons.photo_camera_outlined, size: 18),
-                label: const Text('Add photo'),
+                label: const AppText('Add photo'),
                 onPressed: () => _addEvidence(EvidenceKind.photo),
               ),
               ActionChip(
                 avatar: const Icon(Icons.videocam_outlined, size: 18),
-                label: const Text('Add video'),
+                label: const AppText('Add video'),
                 onPressed: () => _addEvidence(EvidenceKind.video),
               ),
               ActionChip(
                 avatar: const Icon(Icons.note_add_outlined, size: 18),
-                label: const Text('Add note'),
+                label: const AppText('Add note'),
                 onPressed: () => _addEvidence(EvidenceKind.note),
               ),
             ],
           ),
           if (_evidence.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             for (final item in _evidence)
               ListTile(
                 dense: true,
                 leading: Icon(_evidenceIcon(item.kind)),
-                title: Text(item.label),
+                title: AppText(item.label),
                 trailing: IconButton(
-                  tooltip: 'Remove',
+                  tooltip: trText(context, 'Remove'),
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _removeEvidence(item),
                 ),
               ),
           ],
           if (_error != null) ...[
-            const SizedBox(height: 12),
-            Text(
+            const SizedBox(height: AppSpacing.md),
+            AppText(
               _error!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: danger),
             ),
           ],
         ],
@@ -176,16 +173,17 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: FilledButton(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.pageGutter,
+            AppSpacing.sm,
+            AppSpacing.pageGutter,
+            AppSpacing.lg,
+          ),
+          child: AppButton(
+            label: 'Send report',
+            variant: AppButtonVariant.danger,
+            loading: _busy,
             onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Send report'),
           ),
         ),
       ),

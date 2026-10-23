@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,35 +37,35 @@ class HomeTab extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Care-Flash'),
+        title: const AppText('Care-Flash'),
         actions: [
           IconButton(
-            tooltip: 'Help and support',
+            tooltip: trText(context, 'Help and support'),
             onPressed: () => context.push(HelpSupportScreen.route),
-            icon: const Icon(Icons.support_agent),
+            icon: const Icon(Icons.support_agent_rounded),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
-          Text(
+          AppText(
             'Hi, ${user?.name.split(' ').first ?? 'there'}',
             style: theme.textTheme.headlineSmall,
           ),
-          const SizedBox(height: 4),
-          Text(
+          const SizedBox(height: AppSpacing.xs),
+          AppText(
             'How can we help you today?',
             style: theme.textTheme.bodyLarge
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.lg),
           _NeedHelpCard(
             onTap: () {
               if (booking != null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('You already have an ongoing request.'),
+                    content: AppText('You already have an ongoing request.'),
                   ),
                 );
                 context.push(_ongoingRoute(booking));
@@ -75,25 +76,25 @@ class HomeTab extends ConsumerWidget {
             },
           ),
           if (booking != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             _OngoingActivityCard(booking: booking),
           ],
-          const SizedBox(height: 24),
-          Text('Quick actions', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionHeader(title: 'Quick actions'),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Expanded(
                 child: _QuickAction(
-                  icon: Icons.credit_card,
+                  icon: Icons.credit_card_rounded,
                   label: 'Payment info',
                   onTap: () => context.push(PaymentInfoScreen.route),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _QuickAction(
-                  icon: Icons.support_agent,
+                  icon: Icons.support_agent_rounded,
                   label: 'Help & support',
                   onTap: () => context.push(HelpSupportScreen.route),
                 ),
@@ -114,64 +115,38 @@ class _NeedHelpCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final dark = scheme.brightness == Brightness.dark;
-    final foreground = dark ? scheme.onPrimaryContainer : scheme.onPrimary;
-    final start = dark ? scheme.primaryContainer : scheme.primary;
-    final end = dark
-        ? Color.lerp(scheme.primaryContainer, scheme.tertiary, .18)!
-        : const Color(0xFF075F58);
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [start, end],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.primary.withValues(alpha: .2),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return Card(
+      color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: AppSpacing.page,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               Icons.volunteer_activism_outlined,
               size: 36,
-              color: foreground,
+              color: theme.colorScheme.onPrimaryContainer,
             ),
-            const SizedBox(height: 12),
-            Text(
+            const SizedBox(height: AppSpacing.md),
+            AppText(
               'Need help?',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: foreground,
+                color: theme.colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               'Request a nearby verified caregiver for a short visit.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: foreground.withValues(alpha: .92),
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Start a request',
+              icon: Icons.add_rounded,
               onPressed: onTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: scheme.surface,
-                foregroundColor: scheme.primary,
-                elevation: 0,
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text('Start a request'),
             ),
           ],
         ),
@@ -190,25 +165,26 @@ class _OngoingActivityCard extends StatelessWidget {
     final theme = Theme.of(context);
     final caregiver = booking.caregiver;
     final target = _ongoingRoute(booking);
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: AppSpacing.page,
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.secondaryContainer,
           child: Icon(
             booking.status.isSessionStarted
-                ? Icons.directions_run
-                : Icons.schedule,
+                ? Icons.directions_run_rounded
+                : Icons.schedule_rounded,
             color: theme.colorScheme.onSecondaryContainer,
           ),
         ),
-        title: Text('Ongoing: ${booking.status.label}'),
-        subtitle: Text(
+        title: AppText('Ongoing: ${booking.status.label}'),
+        subtitle: AppText(
           caregiver == null
               ? 'Ref ${booking.requestReference}'
               : '${caregiver.name} · Ref ${booking.requestReference}',
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () => context.push(target),
       ),
     );
@@ -228,20 +204,15 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-          child: Column(
-            children: [
-              Icon(icon),
-              const SizedBox(height: 8),
-              Text(label, textAlign: TextAlign.center),
-            ],
-          ),
-        ),
+    return AppCard(
+      compact: true,
+      onTap: onTap,
+      child: Column(
+        children: [
+          Icon(icon),
+          const SizedBox(height: AppSpacing.sm),
+          AppText(label, textAlign: TextAlign.center),
+        ],
       ),
     );
   }

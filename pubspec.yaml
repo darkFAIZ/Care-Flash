@@ -9,4 +9,5 @@ workspace:
   - packages/care_core
   - packages/care_domain
   - packages/care_backend
+  - packages/care_ui
 melos: 

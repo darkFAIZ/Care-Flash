@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,21 +23,20 @@ class EarningsTab extends ConsumerWidget {
         summary.availableBalance >= PlatformPolicy.minimumWithdrawal;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Earnings')),
+      appBar: AppBar(title: const AppText('Earnings')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
           _BalanceCard(summary: summary),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: canWithdraw
-                ? () => showWithdrawSheet(context, summary)
-                : null,
-            icon: const Icon(Icons.payments_outlined),
-            label: const Text('Request withdrawal'),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: 'Request withdrawal',
+            icon: Icons.payments_outlined,
+            onPressed:
+                canWithdraw ? () => showWithdrawSheet(context, summary) : null,
           ),
-          const SizedBox(height: 8),
-          Text(
+          const SizedBox(height: AppSpacing.sm),
+          AppText(
             'Money arrives about ${PlatformPolicy.payoutSchedule.inDays} days '
             'after a request. Minimum withdrawal is '
             '${formatIdr(PlatformPolicy.minimumWithdrawal)}.',
@@ -44,24 +44,23 @@ class EarningsTab extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 24),
-          Text('Transaction history', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xl),
+          const SectionHeader(
+            title: 'Transaction history',
+            padding: EdgeInsets.zero,
+          ),
           if (summary.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: const [
-                    Icon(Icons.inbox_outlined),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Your completed sessions and payouts will appear here.',
-                      ),
+            const AppCard(
+              child: Row(
+                children: [
+                  Icon(Icons.inbox_outlined),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AppText(
+                      'Your completed sessions and payouts will appear here.',
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             )
           else
@@ -93,12 +92,13 @@ class EarningsTab extends ConsumerWidget {
 
     return [
       for (final item in items)
-        Card(
+        AppCard(
+          padding: EdgeInsets.zero,
           child: ListTile(
             leading: Icon(item.icon),
-            title: Text(item.title),
-            subtitle: Text(item.subtitle),
-            trailing: Text(
+            title: AppText(item.title),
+            subtitle: AppText(item.subtitle),
+            trailing: AppText(
               formatIdr(item.amount),
               style: TextStyle(
                 color: item.amount < 0 ? null : Colors.green.shade700,
@@ -144,25 +144,25 @@ class _BalanceCard extends StatelessWidget {
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: AppSpacing.page,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            AppText(
               'Available balance',
               style: theme.textTheme.titleSmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               formatIdr(summary.availableBalance),
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
                 Expanded(
@@ -204,14 +204,14 @@ class _Stat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onPrimaryContainer,
           ),
         ),
         const SizedBox(height: 2),
-        Text(
+        AppText(
           value,
           style: theme.textTheme.titleSmall?.copyWith(
             color: theme.colorScheme.onPrimaryContainer,
@@ -279,7 +279,7 @@ class _WithdrawSheetState extends ConsumerState<_WithdrawSheet> {
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
+        content: AppText(
           'Withdrawal of ${formatIdr(result.amount)} requested via $_method. '
           'It arrives in about ${PlatformPolicy.payoutSchedule.inDays} days.',
         ),
@@ -293,41 +293,41 @@ class _WithdrawSheetState extends ConsumerState<_WithdrawSheet> {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          16,
+          AppSpacing.pageGutter,
           0,
-          16,
-          MediaQuery.of(context).viewInsets.bottom + 16,
+          AppSpacing.pageGutter,
+          MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Withdraw earnings', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
+            AppText('Withdraw earnings', style: theme.textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
+            AppText(
               'Available: ${formatIdr(widget.summary.availableBalance)}',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: _amount,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Amount',
+                labelText: trText(context, 'Amount'),
                 prefixText: 'IDR ',
                 errorText: _error,
               ),
               onChanged: (_) => setState(() => _error = null),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<String>(
               initialValue: _method,
-              decoration: const InputDecoration(labelText: 'Payout method'),
+              decoration: InputDecoration(labelText: trText(context, 'Payout method')),
               items: [
                 for (final method in PlatformPolicy.payoutMethods)
-                  DropdownMenuItem(value: method, child: Text(method)),
+                  DropdownMenuItem(value: method, child: AppText(method)),
               ],
               onChanged: (value) {
                 if (value != null) {
@@ -335,16 +335,11 @@ class _WithdrawSheetState extends ConsumerState<_WithdrawSheet> {
                 }
               },
             ),
-            const SizedBox(height: 16),
-            FilledButton(
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Withdraw ${formatIdr(_parsedAmount)}',
+              loading: _busy,
               onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text('Withdraw ${formatIdr(_parsedAmount)}'),
             ),
           ],
         ),

@@ -26,4 +26,11 @@ abstract interface class AuthRepository {
 
   /// Signs the care seeker out. (FR-CS-2)
   Future<void> signOut();
+
+  /// Updates the care seeker's profile details shown across the app. (Phase 5)
+  Future<void> updateProfile({required String name});
+
+  /// Sets or clears the care seeker's profile photo. [avatarDataUrl] is a
+  /// `data:image/...;base64,...` string, or null to remove the photo.
+  Future<void> updateAvatar({String? avatarDataUrl});
 }

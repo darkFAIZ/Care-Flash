@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,28 +81,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Thank you'),
+          title: const AppText('Thank you'),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.favorite, size: 56, color: theme.colorScheme.primary),
-                const SizedBox(height: 16),
-                const Text(
-                  'Thank you for using Care-Flash.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        body: EmptyState(
+          icon: Icons.favorite_rounded,
+          title: 'Thank you for using Care-Flash.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
@@ -109,58 +95,58 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Rate your visit'),
+        title: const AppText('Rate your visit'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
-          Text(
+          AppText(
             'How was ${caregiver.firstName}?',
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           StarRating(
             value: _caregiverStars,
             onChanged: (stars) => setState(() => _caregiverStars = stars),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _caregiverComment,
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Leave a note about the visit (optional)',
+            decoration: InputDecoration(
+              hintText: trText(context, 'Leave a note about the visit (optional)'),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
           const Divider(),
-          const SizedBox(height: 16),
-          Text(
+          const SizedBox(height: AppSpacing.lg),
+          AppText(
             'How was the Care-Flash app?',
             style: theme.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           StarRating(
             value: _appStars,
             onChanged: (stars) => setState(() => _appStars = stars),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _appComment,
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Tell us what to improve (optional)',
+            decoration: InputDecoration(
+              hintText: trText(context, 'Tell us what to improve (optional)'),
             ),
           ),
           if (_error != null) ...[
-            const SizedBox(height: 16),
-            Text(
+            const SizedBox(height: AppSpacing.lg),
+            AppText(
               _error!,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
+                color: AppSemanticColors.of(context).danger,
               ),
             ),
           ],
@@ -169,18 +155,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: FilledButton(
-            onPressed: _busy
-                ? null
-                : () => _submit(booking, caregiver),
-            child: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Submit'),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.pageGutter,
+            AppSpacing.sm,
+            AppSpacing.pageGutter,
+            AppSpacing.lg,
+          ),
+          child: AppButton(
+            label: 'Submit',
+            loading: _busy,
+            onPressed:
+                _busy ? null : () => _submit(booking, caregiver),
           ),
         ),
       ),

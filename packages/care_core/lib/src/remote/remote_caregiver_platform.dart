@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:care_domain/care_domain.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backend_client.dart';
 
@@ -13,10 +14,18 @@ import 'backend_client.dart';
 class RemoteCaregiverPlatform implements CaregiverPlatform {
   RemoteCaregiverPlatform(this._client) {
     _subscription = _client.snapshots.listen(_applySnapshot);
+    _reconnectSubscription =
+        _client.reconnected.listen((_) => _restoreSession());
   }
 
   final CareBackendClient _client;
   late final StreamSubscription<Map<String, Object?>> _subscription;
+  late final StreamSubscription<void> _reconnectSubscription;
+
+  /// Where the backend session token is kept between app launches.
+  static const _tokenKey = 'backend.token.caregiver';
+
+  String? _token;
 
   final StreamController<CaregiverAccount?> _caregiverController =
       StreamController<CaregiverAccount?>.broadcast();
@@ -41,10 +50,44 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   List<FeedbackReceived> _feedbackReceived = const [];
   List<CareSeekerRating> _careSeekerRatings = const [];
 
-  Future<void> connect() => _client.connect();
+  Future<void> connect() async {
+    await _client.connect();
+    await _restoreSession();
+  }
+
+  /// Signs this app back in with the token saved on the last launch.
+  Future<void> _restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_tokenKey);
+    if (token == null) return;
+    try {
+      final result = await _client.call('authToken', {'token': token});
+      if (result is Map && result['resume'] == true) {
+        _token = token;
+        _caregiver =
+            CaregiverAccount.fromJson(result['user']! as Map<String, Object?>);
+        _caregiverController.add(_caregiver);
+      } else {
+        await prefs.remove(_tokenKey);
+      }
+    } on BackendException {
+      await prefs.remove(_tokenKey);
+    }
+  }
+
+  Future<void> _rememberToken(String? token) async {
+    _token = token;
+    final prefs = await SharedPreferences.getInstance();
+    if (token == null) {
+      await prefs.remove(_tokenKey);
+    } else {
+      await prefs.setString(_tokenKey, token);
+    }
+  }
 
   void dispose() {
     _subscription.cancel();
+    _reconnectSubscription.cancel();
     _caregiverController.close();
     _incomingController.close();
     _activeController.close();
@@ -55,24 +98,15 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   }
 
   void _applySnapshot(Map<String, Object?> data) {
-    _caregiver = decodeOrNull(
-      data['currentCaregiver'],
-      CaregiverAccount.fromJson,
-    );
+    _caregiver = decodeOrNull(data['currentCaregiver'], CaregiverAccount.fromJson);
     _incomingRequest = decodeOrNull(data['incomingRequest'], Booking.fromJson);
     _activeBooking = decodeOrNull(data['activeBooking'], Booking.fromJson);
     _history = decodeList(data['bookingHistory'], Booking.fromJson);
     _earnings =
-        decodeOrNull(data['earnings'], EarningsSummary.fromJson) ??
-        const EarningsSummary();
-    _feedbackReceived = decodeList(
-      data['feedbackReceived'],
-      FeedbackReceived.fromJson,
-    );
-    _careSeekerRatings = decodeList(
-      data['careSeekerRatings'],
-      CareSeekerRating.fromJson,
-    );
+        decodeOrNull(data['earnings'], EarningsSummary.fromJson) ?? const EarningsSummary();
+    _feedbackReceived = decodeList(data['feedbackReceived'], FeedbackReceived.fromJson);
+    _careSeekerRatings =
+        decodeList(data['careSeekerRatings'], CareSeekerRating.fromJson);
     _caregiverController.add(_caregiver);
     _incomingController.add(_incomingRequest);
     _activeController.add(_activeBooking);
@@ -104,12 +138,13 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
     required String email,
     required String password,
     required Gender gender,
-  }) => _authenticate('caregiverSignUp', {
-    'name': name,
-    'email': email,
-    'password': password,
-    'gender': gender.name,
-  });
+  }) =>
+      _authenticate('caregiverSignUp', {
+        'name': name,
+        'email': email,
+        'password': password,
+        'gender': gender.name,
+      });
 
   @override
   Future<CaregiverAuthResult> signIn({
@@ -124,31 +159,49 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   ) async {
     final result = await _call(op, args);
     if (result['success'] == true) {
-      _caregiver = CaregiverAccount.fromJson(
-        result['user']! as Map<String, Object?>,
-      );
+      _caregiver = CaregiverAccount.fromJson(result['user']! as Map<String, Object?>);
+      await _rememberToken(result['token'] as String?);
       _caregiverController.add(_caregiver);
       return CaregiverAuthResult.success(_caregiver!);
     }
-    return CaregiverAuthResult.failure(
-      result['error'] as String? ?? 'Sign in failed.',
-    );
+    return CaregiverAuthResult.failure(result['error'] as String? ?? 'Sign in failed.');
   }
 
   @override
   Future<void> signOut() async {
+    final token = _token;
     _caregiver = null;
     _caregiverController.add(null);
+    await _rememberToken(null);
+    if (token != null) {
+      try {
+        await _callVoid('signOut', {'token': token});
+      } on BackendException {
+        // The local session is already gone; the server token expires on its
+        // own if the connection is down.
+      }
+    }
   }
+
+  @override
+  Future<void> updateProfile({required String name}) =>
+      _callVoid('updateCaregiverProfile', {'name': name});
+
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) =>
+      _callVoid('updateCaregiverAvatar', {'avatarDataUrl': avatarDataUrl});
 
   @override
   Future<void> submitVerification({
     required String residentialIdNumber,
     required String documentLabel,
-  }) => _callVoid('submitVerification', {
-    'residentialIdNumber': residentialIdNumber,
-    'documentLabel': documentLabel,
-  });
+  }) =>
+      _callVoid('submitVerification', {
+        // The demo backend validates the submission but intentionally does
+        // not retain identity numbers or document labels.
+        'residentialIdNumber': residentialIdNumber,
+        'documentLabel': documentLabel,
+      });
 
   @override
   Future<void> completeSafetyModule() => _callVoid('completeSafetyModule');
@@ -196,11 +249,18 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   Future<void> markArrived() => _callVoid('markArrived');
 
   @override
+  Future<ButtonVerificationResult> verifyClientCode(String code) async {
+    final json = await _call('verifyClientCode', {'code': code});
+    return json['success'] == true
+        ? const ButtonVerificationResult.success()
+        : ButtonVerificationResult.failed(json['message'] as String?);
+  }
+
+  @override
   Future<void> completeSession() => _callVoid('completeSession');
 
   @override
-  Future<void> sos(String description) =>
-      _callVoid('sos', {'description': description});
+  Future<void> sos(String description) => _callVoid('sos', {'description': description});
 
   @override
   Future<void> reportCareSeeker(IncidentReport report) =>
@@ -254,9 +314,6 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   void simulateCareSeekerCancel() {}
 
   @override
-  void simulateCareSeekerCodeConfirmation({bool valid = true}) {}
-
-  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
@@ -268,12 +325,10 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   Future<Map<String, Object?>> _call(
     String op, [
     Map<String, Object?> args = const {},
-  ]) async => await _client.call(op, args) as Map<String, Object?>;
+  ]) async =>
+      await _client.call(op, args) as Map<String, Object?>;
 
-  Future<void> _callVoid(
-    String op, [
-    Map<String, Object?> args = const {},
-  ]) async {
+  Future<void> _callVoid(String op, [Map<String, Object?> args = const {}]) async {
     await _client.call(op, args);
   }
 }

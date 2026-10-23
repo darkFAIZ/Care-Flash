@@ -32,7 +32,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   /// How long after becoming eligible before a request arrives. (PR-CM-1)
   final Duration requestArrivalDelay;
 
-  /// How long after the caregiver code is confirmed before the simulated care
+  /// How long after the client code is verified before the simulated care
   /// seeker scans the safety button. (FR-CM-15)
   final Duration buttonScanDelay;
 
@@ -102,15 +102,13 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   void _restore() {
     final caregiverJson = _prefs.getString(_caregiverKey);
     if (caregiverJson != null) {
-      _caregiver = CaregiverAccount.fromJson(
-        jsonDecode(caregiverJson) as Map<String, Object?>,
-      );
+      _caregiver =
+          CaregiverAccount.fromJson(jsonDecode(caregiverJson) as Map<String, Object?>);
     }
     final bookingJson = _prefs.getString(_activeBookingKey);
     if (bookingJson != null) {
-      final booking = Booking.fromJson(
-        jsonDecode(bookingJson) as Map<String, Object?>,
-      );
+      final booking =
+          Booking.fromJson(jsonDecode(bookingJson) as Map<String, Object?>);
       if (booking.status.isOpen) {
         _activeBooking = booking;
       } else {
@@ -219,6 +217,24 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   }
 
   @override
+  Future<void> updateProfile({required String name}) async {
+    final caregiver = _caregiver;
+    if (caregiver == null) {
+      return;
+    }
+    await _setCaregiver(caregiver.copyWith(name: name));
+  }
+
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) async {
+    final caregiver = _caregiver;
+    if (caregiver == null) {
+      return;
+    }
+    await _setCaregiver(caregiver.copyWith(avatarDataUrl: avatarDataUrl));
+  }
+
+  @override
   Future<void> submitVerification({
     required String residentialIdNumber,
     required String documentLabel,
@@ -231,8 +247,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
       caregiver.copyWith(
         verificationStatus: VerificationStatus.pending,
         rejectionReason: null,
-        residentialIdNumber: residentialIdNumber.trim(),
-        identityCardLabel: documentLabel,
+        residentialIdNumber: null,
+        identityCardLabel: null,
         verificationSubmittedAt: DateTime.now(),
       ),
     );
@@ -308,7 +324,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
         .copyWith(
           caregiver: caregiver.toPublic(),
           status: BookingStatus.confirmed,
-          // The caregiver shares this one-time identity code at arrival.
+          // The care seeker's client code now exists; it is only shown to the
+          // caregiver when the care seeker presents it on arrival. (FR-CM-13)
           clientCode: _clientCode(),
         )
         .withUpdate(
@@ -380,8 +397,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   @override
   Future<void> markArrived() async {
     final booking = _activeBooking;
-    if (booking == null ||
-        booking.status != BookingStatus.caregiverTravelling) {
+    if (booking == null || booking.status != BookingStatus.caregiverTravelling) {
       return;
     }
     await _smallDelay();
@@ -391,12 +407,65 @@ class MockCaregiverPlatform implements CaregiverPlatform {
           .withUpdate(
             BookingUpdate(
               status: BookingStatus.arrived,
-              message:
-                  'You arrived. Share your verification code with the care seeker.',
+              message: 'You arrived. Ask the care seeker for their client code.',
               at: DateTime.now(),
             ),
           ),
     );
+  }
+
+  @override
+  Future<ButtonVerificationResult> verifyClientCode(String code) async {
+    final booking = _activeBooking;
+    if (booking == null || booking.status != BookingStatus.arrived) {
+      return const ButtonVerificationResult.failed(
+        'This booking is not ready for the client code yet.',
+      );
+    }
+    await _smallDelay();
+    if (booking.clientCode == null || code.trim() != booking.clientCode) {
+      // A wrong code cancels the booking and notifies support. (FR-CM-14)
+      _finishBooking(
+        booking
+            .copyWith(
+              status: BookingStatus.cancelled,
+              cancellationReason: CancellationReason.failedVerification,
+            )
+            .withUpdate(
+              BookingUpdate(
+                status: BookingStatus.cancelled,
+                message:
+                    'The client code did not match. The booking was cancelled and support was notified.',
+                at: DateTime.now(),
+              ),
+            ),
+      );
+      return const ButtonVerificationResult.failed(
+        'The client code did not match. The booking was cancelled.',
+      );
+    }
+    // After a valid client code the caregiver app generates the booking-linked
+    // safety-button code. The CARE SEEKER verifies it by scanning; the caregiver
+    // can never confirm it. (FR-CM-15, FR-P-17, FR-P-18)
+    await _setActiveBooking(
+      booking
+          .copyWith(
+            status: BookingStatus.codeVerified,
+            buttonCode: ButtonCode.generate(bookingId: booking.id),
+          )
+          .withUpdate(
+            BookingUpdate(
+              status: BookingStatus.codeVerified,
+              message:
+                  'Client code verified. Hand over the safety button and ask the care seeker to scan it.',
+              at: DateTime.now(),
+            ),
+          ),
+    );
+    if (_autoAdvance) {
+      _scheduleButtonScan();
+    }
+    return const ButtonVerificationResult.success();
   }
 
   @override
@@ -413,15 +482,13 @@ class MockCaregiverPlatform implements CaregiverPlatform {
           .copyWith(
             status: BookingStatus.completed,
             outcome: SessionOutcome.completed,
-            caregiverPayout: price == null
-                ? 0
-                : Pricing.caregiverEarnings(price),
+            caregiverPayout:
+                price == null ? 0 : Pricing.caregiverEarnings(price),
           )
           .withUpdate(
             BookingUpdate(
               status: BookingStatus.completed,
-              message:
-                  'Work marked complete. The care seeker will be notified.',
+              message: 'Work marked complete. The care seeker will be notified.',
               at: DateTime.now(),
             ),
           ),
@@ -442,7 +509,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
           .copyWith(
             status: BookingStatus.caregiverSos,
             outcome: SessionOutcome.caregiverSos,
-            caregiverPayout: price == null ? 0 : Pricing.sosCompensation(price),
+            caregiverPayout:
+                price == null ? 0 : Pricing.sosCompensation(price),
           )
           .withUpdate(
             BookingUpdate(
@@ -559,8 +627,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
     }
 
     final active = _activeBooking;
-    final pending =
-        active != null &&
+    final pending = active != null &&
             active.status == BookingStatus.active &&
             active.price != null
         ? Pricing.caregiverEarnings(active.price!)
@@ -595,9 +662,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   Future<void> rateCareSeeker(CareSeekerRating rating) async {
     await _smallDelay();
     _careSeekerRatings.insert(0, rating);
-    _careSeekerRatingsController.add(
-      List<CareSeekerRating>.unmodifiable(_careSeekerRatings),
-    );
+    _careSeekerRatingsController
+        .add(List<CareSeekerRating>.unmodifiable(_careSeekerRatings));
   }
 
   /// Simulates the care seeker leaving feedback for the caregiver shortly after
@@ -622,9 +688,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
           receivedAt: DateTime.now(),
         ),
       );
-      _feedbackController.add(
-        List<FeedbackReceived>.unmodifiable(_feedbackReceived),
-      );
+      _feedbackController
+          .add(List<FeedbackReceived>.unmodifiable(_feedbackReceived));
     });
   }
 
@@ -680,62 +745,6 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   }
 
   @override
-  void simulateCareSeekerCodeConfirmation({bool valid = true}) {
-    final booking = _activeBooking;
-    if (booking == null || booking.status != BookingStatus.arrived) return;
-    if (!valid) {
-      _finishBooking(
-        booking
-            .copyWith(
-              status: BookingStatus.cancelled,
-              cancellationReason: CancellationReason.failedVerification,
-            )
-            .withUpdate(
-              BookingUpdate(
-                status: BookingStatus.cancelled,
-                message:
-                    'The caregiver code did not match. The booking was cancelled.',
-                at: DateTime.now(),
-              ),
-            ),
-      );
-      return;
-    }
-    unawaited(
-      _setActiveBooking(
-        booking
-            .copyWith(
-              status: BookingStatus.codeVerified,
-              safetyButtonId: _safetyButtonId(booking.id),
-            )
-            .withUpdate(
-              BookingUpdate(
-                status: BookingStatus.codeVerified,
-                message: 'The care seeker confirmed your identity code.',
-                at: DateTime.now(),
-              ),
-            ),
-      ),
-    );
-    if (_autoAdvance) _scheduleButtonScan();
-  }
-
-  /// Compatibility helper for existing mock-only walkthroughs.
-  Future<ButtonVerificationResult> verifyClientCode(String code) async {
-    final booking = _activeBooking;
-    if (booking == null ||
-        booking.status != BookingStatus.arrived ||
-        booking.clientCode != code.trim()) {
-      simulateCareSeekerCodeConfirmation(valid: false);
-      return const ButtonVerificationResult.failed(
-        'The caregiver code did not match. The booking was cancelled.',
-      );
-    }
-    simulateCareSeekerCodeConfirmation();
-    return const ButtonVerificationResult.success();
-  }
-
-  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
@@ -744,12 +753,17 @@ class MockCaregiverPlatform implements CaregiverPlatform {
     if (booking == null) {
       return;
     }
-    // The button can only be verified after caregiver identity confirmation.
+    // The button can only be verified after the client code. (FR-CM-13, FR-CM-15)
     if (booking.status != BookingStatus.codeVerified) {
       return;
     }
     _buttonScanTimer?.cancel();
-    if (!valid || booking.safetyButtonId == null) {
+    // This simulates the CARE SEEKER scanning the button. The platform applies
+    // the same single-use, nonce and expiry rules as a real scan; the caregiver
+    // app never confirms the button by itself. (FR-P-18)
+    final payload = valid ? (booking.safetyButtonId ?? '') : 'INVALID-BUTTON';
+    final failure = booking.validateButtonPayload(payload);
+    if (failure != null) {
       _finishBooking(
         booking
             .copyWith(
@@ -760,7 +774,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
               BookingUpdate(
                 status: BookingStatus.cancelled,
                 message:
-                    'The safety button did not match. The booking was cancelled and support was notified.',
+                    '${failure.label} The booking was cancelled and support was notified.',
                 at: DateTime.now(),
               ),
             ),
@@ -770,7 +784,10 @@ class MockCaregiverPlatform implements CaregiverPlatform {
     unawaited(
       _setActiveBooking(
         booking
-            .copyWith(status: BookingStatus.active)
+            .copyWith(
+              status: BookingStatus.active,
+              buttonCode: booking.buttonCode!.markUsed(DateTime.now()),
+            )
             .withUpdate(
               BookingUpdate(
                 status: BookingStatus.active,
@@ -795,9 +812,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
           .copyWith(
             status: BookingStatus.endedEarly,
             outcome: SessionOutcome.endedEarly,
-            caregiverPayout: price == null
-                ? 0
-                : Pricing.earlyEndCompensation(price),
+            caregiverPayout:
+                price == null ? 0 : Pricing.earlyEndCompensation(price),
           )
           .withUpdate(
             BookingUpdate(
@@ -810,7 +826,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
     );
   }
 
-  /// Debug-only: the caregiver verification code, for single-device demos.
+  /// Debug-only: the client code the care seeker is currently presenting, so
+  /// the demo can be driven without a second device. (FR-CM-13)
   @override
   String? get debugClientCode => _activeBooking?.clientCode;
 
@@ -818,7 +835,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   // Internals
   // ---------------------------------------------------------------------------
 
-  /// Simulates the care seeker scanning the safety button after identity
+  /// Simulates the care seeker scanning the safety button after the client code
   /// is verified, so the demo can run on one device. (FR-CM-15, FR-CM-16)
   void _scheduleButtonScan() {
     _buttonScanTimer?.cancel();
@@ -830,9 +847,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
     });
   }
 
-  String _clientCode() => (_random.nextInt(900000) + 100000).toString();
-
-  String _safetyButtonId(String bookingId) => 'BTN-${bookingId.toUpperCase()}';
+  String _clientCode() =>
+      (_random.nextInt(900000) + 100000).toString();
 
   void _scheduleVerificationReview() {
     _verificationTimer?.cancel();
@@ -851,7 +867,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
               // TODO(team): the exact rejection wording is up to the review
               // team. (FR-CM-3)
               rejectionReason:
-                  'The identity card photo is blurry. Please upload a clearer photo and try again.',
+                  'The Residential ID photo is blurry. Please upload a clearer photo and try again.',
             ),
           ),
         );
@@ -924,12 +940,11 @@ class MockCaregiverPlatform implements CaregiverPlatform {
 
   /// Builds a request as the care seeker would have submitted it.
   ///
-  /// The caregiver is offered it, but the destination and verification code are only
+  /// The caregiver is offered it, but the destination and client code are only
   /// needed after acceptance, so they are withheld here. (FR-CM-8, DC-CM-2)
   Booking _buildOfferedBooking(CaregiverAccount caregiver) {
     final now = DateTime.now();
-    final duration =
-        VisitDuration.values[_random.nextInt(VisitDuration.values.length)];
+    final duration = VisitDuration.values[_random.nextInt(VisitDuration.values.length)];
     final price = Pricing.breakdown(duration);
     final helpType = HelpType.values[_random.nextInt(HelpType.values.length)];
     return Booking(
@@ -945,6 +960,9 @@ class MockCaregiverPlatform implements CaregiverPlatform {
       genderFilter: GenderFilter.both,
       caregiver: caregiver.toPublic(),
       price: price,
+      // The care seeker pays the Grab fare; it is recorded here for the model
+      // but it is never part of the caregiver's pay. (FR-P-10, FR-P-11)
+      estimatedGrabFare: price.grabFare,
       status: BookingStatus.paidPending,
       createdAt: now,
       updates: [

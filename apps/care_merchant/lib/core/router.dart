@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/account/create_account_screen.dart';
+import '../features/account/edit_profile_screen.dart';
 import '../features/account/login_screen.dart';
 import '../features/account/splash_screen.dart';
 import '../features/booking/booking_screen.dart';
@@ -52,6 +53,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: SafetyModuleScreen.route,
         builder: (context, state) => const SafetyModuleScreen(),
+      ),
+      // Profile editing. (Phase 5)
+      GoRoute(
+        path: EditProfileScreen.route,
+        builder: (context, state) => const EditProfileScreen(),
       ),
       // Incoming request. (FR-CM-7 to FR-CM-9)
       GoRoute(

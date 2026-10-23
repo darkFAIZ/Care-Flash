@@ -1,4 +1,6 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,28 +52,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 size: 52,
                 color: theme.colorScheme.onPrimary,
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
+            )
+                .animate()
+                .fadeIn(duration: 400.ms, delay: 100.ms)
+                .scale(
+                  begin: const Offset(0.9, 0.9),
+                  end: const Offset(1, 1),
+                  duration: 400.ms,
+                  delay: 100.ms,
+                  curve: Curves.easeOutBack,
+                ),
+            const SizedBox(height: AppSpacing.lg),
+            AppText(
               'Care-Flash',
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onPrimaryContainer,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
+            ).animate().fadeIn(delay: 300.ms),
+            const SizedBox(height: AppSpacing.sm),
+            AppText(
               'Help nearby, when you need it.',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
-            ),
-            const SizedBox(height: 40),
+            ).animate().fadeIn(delay: 450.ms),
+            const SizedBox(height: AppSpacing.xl),
             const SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(strokeWidth: 3),
-            ),
+            ).animate().fadeIn(delay: 600.ms),
           ],
         ),
       ),

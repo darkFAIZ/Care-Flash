@@ -101,6 +101,18 @@ where cp.user_id = p.id and p.role = 'caregiver'
   and p.full_name = 'YOUR TEST CAREGIVER NAME';
 ```
 
+The refreshed account screens support editing a display name and profile photo, plus saved language
+and light/dark appearance preferences. Small profile photos are stored as data URLs on the user's
+own `profiles` row. Matching shares the assigned caregiver's photo in that booking only. Feedback
+and ratings are stored in `care_ratings`; RLS limits access to the rating's participants, and
+caregiver ratings update the public rating summary. Withdrawals and actual money movement remain
+demo-only.
+
+At arrival, Care-Merchant shows the one-time caregiver verification code. The caregiver tells the
+code to the care seeker, who enters it in Care-Flash. Supabase keeps the code private from the seeker
+and allows the caregiver to read it only after arrival; the seeker's submission is checked by a
+database RPC.
+
 The payment step is a demo confirmation, not a real payment integration. Grab ordering is still
 separate and is not connected to Grab's private backend.
 

@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,15 +70,17 @@ class _ScanSafetyButtonScreenState
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Safety button not verified'),
-        content: Text(message),
+        title: const AppText('Safety button not verified'),
+        content: AppText(message),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Back home',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.go(HomeShell.route);
             },
-            child: const Text('Back home'),
           ),
         ],
       ),
@@ -91,49 +94,30 @@ class _ScanSafetyButtonScreenState
 
     if (booking == null || !booking.canVerifyButton) {
       return Scaffold(
-        appBar: AppBar(title: Text(_title)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _isQr ? Icons.qr_code_2_outlined : Icons.contactless_outlined,
-                  size: 56,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'The safety button is not ready to verify yet.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        appBar: AppBar(title: AppText(_title)),
+        body: EmptyState(
+          icon: _isQr ? Icons.qr_code_2_outlined : Icons.contactless_outlined,
+          title: 'The safety button is not ready to verify yet.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_title),
+        title: AppText(_title),
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.page,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -141,21 +125,23 @@ class _ScanSafetyButtonScreenState
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppRadii.sheet,
                 ),
                 alignment: Alignment.center,
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: AppSpacing.page,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        _isQr ? Icons.qr_code_scanner : Icons.contactless,
+                        _isQr
+                            ? Icons.qr_code_scanner_rounded
+                            : Icons.contactless_rounded,
                         size: 72,
                         color: Colors.white70,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: AppSpacing.lg),
+                      AppText(
                         _isQr
                             ? 'Point the camera at the QR code on the safety button.'
                             : 'Hold the NFC tag close to the top of your phone.',
@@ -169,8 +155,8 @@ class _ScanSafetyButtonScreenState
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
+            const SizedBox(height: AppSpacing.lg),
+            AppText(
               'Your caregiver hands you the booking-linked safety button once '
               'you confirm their identity code. Scanning pairs it to this session.',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -178,23 +164,24 @@ class _ScanSafetyButtonScreenState
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _busy ? null : () => _verify(valid: true),
-              icon: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(_isQr ? Icons.qr_code_scanner : Icons.contactless),
-              label: Text(_busy ? 'Checking…' : 'Simulate a correct scan'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _busy ? null : () => _verify(valid: false),
-              child: const Text('I scanned a different button'),
-            ),
+            const SizedBox(height: AppSpacing.lg),
+            // The simulated read exists only in debug builds. (FR-CS-13, HI-1)
+            if (kDebugMode) ...[
+              AppButton(
+                label: 'Simulate a correct scan',
+                icon: _isQr
+                    ? Icons.qr_code_scanner_rounded
+                    : Icons.contactless_rounded,
+                loading: _busy,
+                onPressed: _busy ? null : () => _verify(valid: true),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: 'I scanned a different button',
+                variant: AppButtonVariant.ghost,
+                onPressed: _busy ? null : () => _verify(valid: false),
+              ),
+            ],
           ],
         ),
       ),

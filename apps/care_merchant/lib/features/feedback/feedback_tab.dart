@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,74 +25,64 @@ class FeedbackTab extends ConsumerWidget {
     final unrated = _firstUnratedVisit(history, ratedIds);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Feedback')),
+      appBar: AppBar(title: const AppText('Feedback')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
           if (unrated != null) ...[
             _RatePromptCard(booking: unrated),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
           ],
-          Text('Feedback received', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(
-            'Care seekers can rate you after every visit.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          const SectionHeader(
+            title: 'Feedback received',
+            subtitle: 'Care seekers can rate you after every visit.',
+            padding: EdgeInsets.zero,
           ),
-          const SizedBox(height: 8),
           if (feedback.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: const [
-                    Icon(Icons.inbox_outlined),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Ratings and notes from care seekers will appear here '
-                        'after your visits.',
-                      ),
+            const AppCard(
+              child: Row(
+                children: [
+                  Icon(Icons.inbox_outlined),
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AppText(
+                      'Ratings and notes from care seekers will appear here '
+                      'after your visits.',
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             )
           else
             ...feedback.map(
-              (item) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          _Stars(value: item.stars),
-                          const Spacer(),
-                          Text(
-                            _formatDate(item.receivedAt),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+              (item) => AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        _Stars(value: item.stars),
+                        const Spacer(),
+                        AppText(
+                          _formatDate(item.receivedAt),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ],
-                      ),
-                      if (item.comment != null) ...[
-                        const SizedBox(height: 8),
-                        Text(item.comment!, style: theme.textTheme.bodyMedium),
-                      ],
-                      const SizedBox(height: 8),
-                      Text(
-                        item.reference,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
+                      ],
+                    ),
+                    if (item.comment != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      AppText(item.comment!, style: theme.textTheme.bodyMedium),
                     ],
-                  ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(
+                      item.reference,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -167,7 +158,7 @@ class _RatePromptCard extends StatelessWidget {
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -177,9 +168,9 @@ class _RatePromptCard extends StatelessWidget {
                   Icons.rate_review_outlined,
                   color: theme.colorScheme.onPrimaryContainer,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  child: Text(
+                  child: AppText(
                     'Rate the care seeker',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
@@ -188,17 +179,18 @@ class _RatePromptCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               '${booking.requestReference} · ${booking.helpType.label}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: 'Rate',
+              expand: false,
               onPressed: () => showRateCareSeekerSheet(context, booking),
-              child: const Text('Rate'),
             ),
           ],
         ),
@@ -253,7 +245,7 @@ class _RateCareSeekerSheetState extends ConsumerState<_RateCareSeekerSheet> {
     }
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Thanks for rating this care seeker.')),
+      const SnackBar(content: AppText('Thanks for rating this care seeker.')),
     );
   }
 
@@ -263,24 +255,24 @@ class _RateCareSeekerSheetState extends ConsumerState<_RateCareSeekerSheet> {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          16,
+          AppSpacing.pageGutter,
           0,
-          16,
-          MediaQuery.of(context).viewInsets.bottom + 16,
+          AppSpacing.pageGutter,
+          MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Rate this care seeker', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(
+            AppText('Rate this care seeker', style: theme.textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               widget.booking.requestReference,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             StarRating(
               value: _stars,
               onChanged: (stars) => setState(() {
@@ -288,34 +280,29 @@ class _RateCareSeekerSheetState extends ConsumerState<_RateCareSeekerSheet> {
                 _error = null;
               }),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: _comment,
               maxLines: 3,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                hintText: 'Leave a note (optional)',
+              decoration: InputDecoration(
+                hintText: trText(context, 'Leave a note (optional)'),
               ),
             ),
             if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(
+              const SizedBox(height: AppSpacing.md),
+              AppText(
                 _error!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
+                  color: AppSemanticColors.of(context).danger,
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-            FilledButton(
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              label: 'Submit rating',
+              loading: _busy,
               onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Submit rating'),
             ),
           ],
         ),

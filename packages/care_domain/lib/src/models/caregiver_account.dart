@@ -4,7 +4,7 @@ import 'account.dart';
 /// A caregiver's account including its onboarding state. (FR-CM-1 to FR-CM-6)
 ///
 /// Care-Merchant works with this type. Care-Flash only ever sees the public
-/// [Caregiver] profile produced by [toPublic], so identity details stay
+/// [Caregiver] profile produced by [toPublic], so Residential ID identity details stay
 /// private to the caregiver app. (DC-CM-3)
 class CaregiverAccount {
   const CaregiverAccount({
@@ -21,6 +21,7 @@ class CaregiverAccount {
     this.residentialIdNumber,
     this.identityCardLabel,
     this.verificationSubmittedAt,
+    this.avatarDataUrl,
   });
 
   final String id;
@@ -33,7 +34,7 @@ class CaregiverAccount {
   final double rating;
   final int reviewCount;
 
-  /// Platform review state for the submitted identity card. (FR-CM-2, FR-CM-3)
+  /// Platform review state for the submitted Residential ID identity. (FR-CM-2, FR-CM-3)
   final VerificationStatus verificationStatus;
 
   /// Why the platform rejected the submission, when [verificationStatus] is
@@ -50,6 +51,9 @@ class CaregiverAccount {
   final String? residentialIdNumber;
   final String? identityCardLabel;
   final DateTime? verificationSubmittedAt;
+
+  /// Optional profile photo as a data URL, shown to care seekers when matched.
+  final String? avatarDataUrl;
 
   String get firstName => name.split(' ').first;
 
@@ -82,6 +86,7 @@ class CaregiverAccount {
         identityVerified: isVerified,
         safetyBadge: safetyModuleCompleted,
         availability: availability,
+        avatarDataUrl: avatarDataUrl,
       );
 
   static const Object _unset = Object();
@@ -98,6 +103,7 @@ class CaregiverAccount {
     Object? residentialIdNumber = _unset,
     Object? identityCardLabel = _unset,
     Object? verificationSubmittedAt = _unset,
+    Object? avatarDataUrl = _unset,
   }) {
     return CaregiverAccount(
       id: id,
@@ -121,6 +127,8 @@ class CaregiverAccount {
       verificationSubmittedAt: verificationSubmittedAt == _unset
           ? this.verificationSubmittedAt
           : verificationSubmittedAt as DateTime?,
+      avatarDataUrl:
+          avatarDataUrl == _unset ? this.avatarDataUrl : avatarDataUrl as String?,
     );
   }
 
@@ -135,9 +143,8 @@ class CaregiverAccount {
         'rejectionReason': rejectionReason,
         'safetyModuleCompleted': safetyModuleCompleted,
         'availability': availability.name,
-        'residentialIdNumber': residentialIdNumber,
-        'identityCardLabel': identityCardLabel,
         'verificationSubmittedAt': verificationSubmittedAt?.toIso8601String(),
+        'avatarDataUrl': avatarDataUrl,
       };
 
   factory CaregiverAccount.fromJson(Map<String, Object?> json) => CaregiverAccount(
@@ -153,13 +160,11 @@ class CaregiverAccount {
         safetyModuleCompleted: json['safetyModuleCompleted'] as bool? ?? false,
         availability: CaregiverAvailability.values
             .byName(json['availability'] as String? ?? 'available'),
-        residentialIdNumber: json['residentialIdNumber'] as String? ??
-            json['studentIdNumber'] as String?,
-        identityCardLabel: json['identityCardLabel'] as String? ??
-            json['studentIdDocumentLabel'] as String?,
+        // ID numbers and document labels are intentionally never persisted.
         verificationSubmittedAt: json['verificationSubmittedAt'] == null
             ? null
             : DateTime.parse(json['verificationSubmittedAt']! as String),
+        avatarDataUrl: json['avatarDataUrl'] as String?,
       );
 }
 

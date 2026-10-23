@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,22 +63,11 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
 
     if (booking == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Safety button')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('The safety button was not verified.'),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        appBar: AppBar(title: const AppText('Safety button')),
+        body: EmptyState(
+          title: 'The safety button was not verified.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
@@ -86,11 +76,11 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Safety button'),
+        title: const AppText('Safety button'),
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
@@ -98,15 +88,15 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.page,
           children: [
-            Text(
+            AppText(
               'Hand the safety button to the care seeker',
               style: theme.textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
+            const SizedBox(height: AppSpacing.sm),
+            AppText(
               _method == ButtonVerificationMethod.qr
                   ? 'Ask the care seeker to scan this QR code with Care-Flash.'
                   : 'Ask the care seeker to read the button with their phone '
@@ -116,34 +106,33 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             Center(
               child: _method == ButtonVerificationMethod.qr
                   ? QrPlaceholder(value: booking.safetyButtonId ?? booking.id)
-                  : Icon(
-                      Icons.contactless,
+                  : const Icon(
+                      Icons.contactless_outlined,
                       size: 120,
-                      color: theme.colorScheme.primary,
                     ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             Center(
-              child: Text(
+              child: AppText(
                 booking.safetyButtonId ?? booking.id,
                 style: theme.textTheme.labelLarge,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             SegmentedButton<ButtonVerificationMethod>(
               segments: const [
                 ButtonSegment(
                   value: ButtonVerificationMethod.qr,
-                  label: Text('QR code'),
+                  label: AppText('QR code'),
                   icon: Icon(Icons.qr_code_2_outlined),
                 ),
                 ButtonSegment(
                   value: ButtonVerificationMethod.nfc,
-                  label: Text('NFC'),
+                  label: AppText('NFC'),
                   icon: Icon(Icons.contactless_outlined),
                 ),
               ],
@@ -151,11 +140,21 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
               onSelectionChanged: (selection) =>
                   setState(() => _method = selection.first),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
+            // The caregiver never confirms the button. Only the care seeker's
+            // scan, checked by the platform, starts the session. (FR-P-18)
             if (alreadyVerified)
-              FilledButton(
-                onPressed: () => context.go(SessionScreen.route),
-                child: const Text('Open session'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle_rounded,
+                      color: theme.colorScheme.primary),
+                  const SizedBox(width: AppSpacing.sm),
+                  AppText(
+                    'Verified by the care seeker',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ],
               )
             else
               Row(
@@ -165,10 +164,10 @@ class _ButtonHandoverScreenState extends ConsumerState<ButtonHandoverScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
-                    child: Text(
-                      'Waiting for the care seeker to scan the button…',
+                    child: AppText(
+                      'Waiting for the care seeker to verify…',
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),

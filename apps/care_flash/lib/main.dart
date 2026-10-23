@@ -1,6 +1,7 @@
 import 'package:care_core/care_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
@@ -20,6 +21,8 @@ bool _supabaseInitialized = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+  await loadPreferences();
   await _startApp();
 }
 

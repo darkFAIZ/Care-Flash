@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,7 +37,6 @@ class _HelpRequestScreenState extends ConsumerState<HelpRequestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final draft = ref.watch(requestDraftProvider);
     final controller = ref.read(requestDraftProvider.notifier);
 
@@ -50,27 +50,23 @@ class _HelpRequestScreenState extends ConsumerState<HelpRequestScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Type of help', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SectionHeader(title: 'Type of help'),
+          const SizedBox(height: AppSpacing.sm),
           for (final type in HelpType.values) ...[
             _HelpTypeCard(
               type: type,
               selected: draft.helpType == type,
               onTap: () => controller.setHelpType(type),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
-          const SizedBox(height: 12),
-          Text('Notes for the caregiver (optional)',
-              style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          TextField(
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
             controller: _description,
+            label: 'Notes for the caregiver (optional)',
+            hint: 'Anything the caregiver should know?',
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              hintText: 'Anything the caregiver should know?',
-            ),
             onChanged: controller.setDescription,
           ),
         ],
@@ -100,19 +96,43 @@ class _HelpTypeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      color: selected ? theme.colorScheme.secondaryContainer : null,
-      child: ListTile(
-        leading: Icon(
-          _icon,
-          color: selected ? theme.colorScheme.onSecondaryContainer : null,
-        ),
-        title: Text(type.label),
-        subtitle: Text(type.description),
-        trailing: selected
-            ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-            : null,
-        onTap: onTap,
+    return AppCard(
+      highlighted: selected,
+      compact: true,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(
+            _icon,
+            size: 24,
+            color: selected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText(type.label, style: theme.textTheme.bodyLarge),
+                const SizedBox(height: 2),
+                AppText(
+                  type.description,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (selected) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Icon(
+              Icons.check_circle_rounded,
+              color: theme.colorScheme.primary,
+            ),
+          ],
+        ],
       ),
     );
   }

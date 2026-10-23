@@ -34,6 +34,19 @@ abstract final class PlatformPolicy {
   /// TODO(team): confirm evidence types, limits and retention. (FR-CS-18)
   static const int maxEvidenceAttachments = 10;
 
+  /// How long a safety-button code stays valid. The code is single use and tied
+  /// to one booking.
+  /// TODO(team): confirm the exact expiry. 15 minutes is the working default.
+  /// (FR-P-17, FR-P-18, HI-1)
+  static const Duration safetyButtonCodeTtl = Duration(minutes: 15);
+
+  /// Whether the platform keeps the Grab fare when a booking is cancelled
+  /// before the session for a failed verification or a pre-session danger
+  /// report. The ride may already have been taken, so the fare is kept.
+  /// TODO(team): confirm. The SRS has not decided this, and it is recorded as
+  /// open decision 2. (FR-P-10, FR-P-13, FR-P-19)
+  static const bool keepGrabFareOnFailedBooking = true;
+
   /// Estimated Grab fare per duration used by the mock.
   /// TODO(team): replace with a real Grab fare estimate. The platform obtains
   /// the fare separately. (FR-P-10)
