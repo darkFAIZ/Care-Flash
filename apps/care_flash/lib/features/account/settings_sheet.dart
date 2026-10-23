@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Opens the settings overlay. (AGENTS.md §5: settings overlay)
@@ -25,33 +26,35 @@ class _SettingsSheetState extends State<_SettingsSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pageGutter, vertical: AppSpacing.sm),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Settings', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
+            AppText('Settings', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.sm),
             SwitchListTile(
               value: _pushNotifications,
               onChanged: (value) =>
                   setState(() => _pushNotifications = value),
-              title: const Text('Push notifications'),
-              subtitle: const Text('Booking, arrival and safety updates'),
+              title: const AppText('Push notifications'),
+              subtitle: const AppText('Booking, arrival and safety updates'),
             ),
             SwitchListTile(
               value: _shareLocation,
               onChanged: (value) => setState(() => _shareLocation = value),
-              title: const Text('Share my location'),
-              subtitle: const Text('Used only for matching and your visit'),
+              title: const AppText('Share my location'),
+              subtitle: const AppText('Used only for matching and your visit'),
             ),
-            const SizedBox(height: 8),
-            TextButton.icon(
+            const SizedBox(height: AppSpacing.sm),
+            AppButton(
+              label: 'Privacy information',
+              icon: Icons.privacy_tip_outlined,
+              variant: AppButtonVariant.ghost,
+              expand: false,
               onPressed: () => _showPrivacy(context),
-              icon: const Icon(Icons.privacy_tip_outlined),
-              label: const Text('Privacy information'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -63,16 +66,18 @@ class _SettingsSheetState extends State<_SettingsSheet> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Privacy information'),
-        content: const Text(
+        title: const AppText('Privacy information'),
+        content: const AppText(
           'Your location and incident evidence are used only for the booking, '
           'support and emergency response purposes. Card details are never '
           'stored by Care-Flash.',
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Close',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
           ),
         ],
       ),

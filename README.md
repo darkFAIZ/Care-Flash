@@ -22,6 +22,9 @@ Every screen with a **bug icon** (debug builds only) opens **Demo Controls**, wh
 simulated events for the other side. In connected mode the other side is a real app, so those
 controls become no-ops.
 
+Both apps support **English** and **Bahasa Indonesia**. Open **Profile -> Language** to switch; the
+choice is saved on the device and applies immediately. English is the default.
+
 ### Offline (two independent walkthroughs)
 
 ```bash
@@ -36,7 +39,7 @@ flutter run -d edge
 
 Signing in: any valid-looking email plus a password of 6+ characters logs you straight into a
 ready, verified demo account. Use **Create account** instead if you want to walk through the
-caregiver onboarding (student ID, safety module).
+caregiver onboarding (KTP, safety module).
 
 ### Connected live demo (backend + two Edge windows)
 
@@ -45,7 +48,7 @@ inside a phone frame so the mobile aspect ratio is preserved.
 
 ```bash
 # Terminal 1 - the shared backend (run from the repository root)
-dart run packages/care_backend/bin/server.dart 8080
+dart run packages/care_backend/bin/server.dart --port 8080 --data data/backend.json
 
 # Terminal 2 - care seeker (Care-Flash)
 cd apps/care_flash
@@ -56,13 +59,22 @@ cd apps/care_merchant
 flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080
 ```
 
-The backend keeps accounts in memory, so **Create account** in both apps the first time (the
-caregiver must finish onboarding and set themselves **Available**). Without `--dart-define` the
-apps fall back to the offline mock above.
+**Create account** in both apps the first time (the caregiver must finish onboarding and set
+themselves **Available**). Without `--dart-define` the apps fall back to the offline mock above.
+
+Authentication is real enough for a two-app demo: the backend stores accounts, keeps passwords as
+salted SHA-256 hashes (never plain text), and issues a session token on sign-in. Each app saves its
+token locally, so reopening the app signs you back in without typing the password again. Signing out
+revokes the token on the server. With `--data`, accounts and tokens are written to that JSON file and
+reloaded on the next start; **bookings are still in memory only**, so a backend restart clears any
+active request. This is a demo-grade implementation, not production auth (no email delivery, rate
+limiting or password reset). To start fresh, delete the data file. If the backend restarts while the
+apps are open, they reconnect automatically and restore the same session; a request that was in
+flight is not kept (bookings are in memory).
 
 **Connected script (one booking, two windows):**
 
-1. Care-Merchant: **Create account** → student ID → simulated approval → safety module → set
+1. Care-Merchant: **Create account** → KTP → simulated approval → safety module → set
    **Available**. Care-Flash: **Create account**.
 2. Care-Flash: request a visit (help type → checklist → location/time/duration → gender filter →
    price) and **Pay**. The client code appears.
@@ -102,11 +114,16 @@ Controls to simulate the other side.
 13. After the session, **rate the caregiver** and leave a visit note, then rate the **Care-Flash app**
     separately. Submit.
 14. Open the **Activity** tab: the booking is listed with its payment / refund status.
+15. **Profile** tab: **Edit profile** changes your display name and adds or removes a profile photo,
+    and **Appearance** switches the theme mode (System / Light / Dark) and the accent
+    colour (Brand / Ocean / Sunset / Forest / Plum). Both choices are saved on the device.
+16. **Profile -> Language**: switch between English and Bahasa Indonesia. The UI updates
+    immediately and the choice is saved on the device.
 
 ### B. Care-Merchant (caregiver) - accept a request, run a session, get paid, give feedback
 
 1. Launch. Splash → login. Sign in (any email + 6-char password) to land on a verified demo
-   caregiver. (Use **Create account** to walk through onboarding: student ID → simulated approval →
+   caregiver. (Use **Create account** to walk through onboarding: KTP → simulated approval →
    safety module → badge.)
 2. **Requests** tab: an incoming request arrives after a few seconds (or tap Demo Controls →
    *Simulate incoming request*). You see the reference, help type, description, boundary checklist
@@ -125,7 +142,10 @@ Controls to simulate the other side.
    history. **Request withdrawal** once you are above the minimum.
 10. **Feedback** tab: a **Rate the care seeker** prompt for the visit, plus the feedback the care
     seeker left about you (it arrives a few seconds after a session ends).
-11. **Profile** tab: your rating and availability setting.
+11. **Profile** tab: your rating and availability setting, plus **Edit profile** (display name and photo) and
+    **Appearance** (theme mode and accent colour, saved on the device).
+12. **Profile -> Language**: switch between English and Bahasa Indonesia; the choice is saved on
+    the device.
 
 ## Software requirements
 
@@ -150,7 +170,7 @@ The roadmap below follows the requirements in the SRS documents. Phase order is 
    - Agree on supported platforms, development standards, and shared API contracts.
 2. **Accounts and caregiver onboarding**
    - Implement account creation and login for both apps.
-   - Add caregiver student-ID/background verification, safety training, gender profile, and availability.
+   - Add caregiver KTP/background verification, safety training, gender profile, and availability.
 3. **Care request and matching**
    - Build the Care-Flash request flow: help type, optional description, boundary checklist, location, schedule, and caregiver gender filter.
    - Implement nearby available-caregiver matching and caregiver request accept/decline in Care-Merchant.
@@ -201,3 +221,4 @@ cd Care-Flash
 # 2. Bootstrap all apps and packages simultaneously (Runs pub get everywhere)
 melos bootstrap
 ```
+

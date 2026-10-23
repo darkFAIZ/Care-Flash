@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,71 +81,88 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Where', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SectionHeader(title: 'Where'),
+          const SizedBox(height: AppSpacing.xs),
           for (final location in VisitLocation.mockPresets) ...[
-            Card(
-              color: draft.location?.label == location.label
-                  ? theme.colorScheme.secondaryContainer
-                  : null,
-              child: ListTile(
-                leading: Icon(
-                  draft.location?.label == location.label
-                      ? Icons.check_circle
-                      : Icons.place_outlined,
-                  color: draft.location?.label == location.label
-                      ? theme.colorScheme.primary
-                      : null,
-                ),
-                title: Text(location.label),
-                subtitle: Text(location.address),
-                onTap: () => controller.setLocation(location),
+            AppCard(
+              compact: true,
+              highlighted: draft.location?.label == location.label,
+              onTap: () => controller.setLocation(location),
+              child: Row(
+                children: [
+                  Icon(
+                    draft.location?.label == location.label
+                        ? Icons.check_circle_rounded
+                        : Icons.place_outlined,
+                    color: draft.location?.label == location.label
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText(location.label,
+                            style: theme.textTheme.bodyLarge),
+                        const SizedBox(height: 2),
+                        AppText(
+                          location.address,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
-          const SizedBox(height: 12),
-          Text('When', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
+          const SizedBox(height: AppSpacing.md),
+          const SectionHeader(title: 'When'),
+          const SizedBox(height: AppSpacing.xs),
+          AppCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.event_outlined),
-                  title: const Text('Date'),
-                  subtitle: Text(
+                  title: const AppText('Date'),
+                  subtitle: AppText(
                     _scheduledAt == null
                         ? 'Choose a date'
                         : formatVisitTime(_scheduledAt!).split(',').first,
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: _pickDate,
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.schedule_outlined),
-                  title: const Text('Time'),
-                  subtitle: Text(
+                  title: const AppText('Time'),
+                  subtitle: AppText(
                     _scheduledAt == null
                         ? 'Choose a time'
                         : formatClock(_scheduledAt!),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: _pickTime,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Text('How long', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md),
+          const SectionHeader(title: 'How long'),
+          const SizedBox(height: AppSpacing.xs),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               for (final duration in VisitDuration.values)
                 ChoiceChip(
-                  label: Text(duration.label),
+                  label: AppText(duration.label),
                   selected: draft.duration == duration,
                   onSelected: (_) => controller.setDuration(duration),
                 ),

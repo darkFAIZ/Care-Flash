@@ -144,6 +144,24 @@ class MockCarePlatform implements CareSeekerPlatform {
     _userController.add(null);
   }
 
+  @override
+  Future<void> updateProfile({required String name}) async {
+    final user = _user;
+    if (user == null) {
+      return;
+    }
+    await _setUser(user.copyWith(name: name));
+  }
+
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) async {
+    final user = _user;
+    if (user == null) {
+      return;
+    }
+    await _setUser(user.copyWith(avatarDataUrl: avatarDataUrl));
+  }
+
   // ---------------------------------------------------------------------------
   // BookingRepository
   // ---------------------------------------------------------------------------
@@ -167,6 +185,7 @@ class MockCarePlatform implements CareSeekerPlatform {
   Future<Booking> submitRequest(HelpRequest request) async {
     final now = DateTime.now();
     _declinedCaregiverIds.clear();
+    final price = Pricing.breakdown(request.duration);
     final booking = Booking(
       id: 'bk-${_random.nextInt(90000) + 10000}',
       requestReference: _reference(),
@@ -177,7 +196,10 @@ class MockCarePlatform implements CareSeekerPlatform {
       scheduledAt: request.scheduledAt,
       duration: request.duration,
       genderFilter: request.genderFilter,
-      price: Pricing.breakdown(request.duration),
+      price: price,
+      // The care seeker pays the Grab fare as part of the total; the caregiver
+      // never does. (FR-P-10, FR-P-11)
+      estimatedGrabFare: price.grabFare,
       status: BookingStatus.matching,
       createdAt: now,
       updates: [
@@ -220,10 +242,9 @@ class MockCarePlatform implements CareSeekerPlatform {
     if (booking == null) {
       return;
     }
-    // A cancelled paid booking is refunded: the caregiver is not paid when no
-    // one accepts in time and the care seeker keeps their money otherwise.
-    // (FR-P-13, FR-CS-15)
-    final refunded = _refunded(booking, partial: false);
+    // A cancelled paid booking is refunded in full, Grab fare included, when
+    // no ride was booked and nothing was used. (FR-P-13, FR-CS-15)
+    final refunded = _refunded(booking, _refundReasonFor(reason));
     final refundNote =
         refunded.hasRefund ? ' ${formatIdr(refunded.refundAmount!)} refunded.' : '';
     _finishBooking(
@@ -253,24 +274,32 @@ class MockCarePlatform implements CareSeekerPlatform {
         'The safety button cannot be verified yet.',
       );
     }
-    final expected = booking.safetyButtonId;
-    if (expected == null || verification.payload.trim() != expected) {
-      _finishBooking(_failedVerification(
-        booking,
-        'The safety button does not match this booking.',
-      ));
-      return const ButtonVerificationResult.failed(
-        'The safety button does not match this booking. The booking was cancelled.',
+    // The CARE SEEKER's scan is checked here. The code must belong to this
+    // booking, match the nonce, be unexpired and unused. Any failure cancels
+    // the booking, records the failure and notifies support. There is no retry.
+    // (FR-P-18, FR-CS-15)
+    final failure =
+        booking.validateButtonPayload(verification.payload.trim());
+    if (failure != null) {
+      final cancelled = _failedVerification(booking, failure.label);
+      _finishBooking(cancelled);
+      return ButtonVerificationResult.failed(
+        '${failure.label} The booking was cancelled.',
       );
     }
+    final now = DateTime.now();
     await _setActiveBooking(
       booking
-          .copyWith(status: BookingStatus.active)
+          .copyWith(
+            status: BookingStatus.active,
+            // The button code is single use, so it is consumed by this scan.
+            buttonCode: booking.buttonCode!.markUsed(now),
+          )
           .withUpdate(
             BookingUpdate(
               status: BookingStatus.active,
-              message: 'Session started.',
-              at: DateTime.now(),
+              message: 'Safety button verified. Session started.',
+              at: now,
             ),
           ),
     );
@@ -283,9 +312,9 @@ class MockCarePlatform implements CareSeekerPlatform {
     if (booking == null || booking.status != BookingStatus.active) {
       return;
     }
-    // The caregiver keeps the early-end compensation and the unused part of the
-    // visit is refunded to the care seeker. (FR-CS-16, FR-P-22)
-    final partial = _refunded(booking, partial: true);
+    // The care seeker stops the session; the caregiver keeps the early-end
+    // compensation and the unused remainder is refunded. (FR-CS-16, FR-P-22)
+    final partial = _refunded(booking, RefundReason.endedEarly);
     final refundNote = partial.hasRefund
         ? ' ${formatIdr(partial.refundAmount!)} refunded to you.'
         : '';
@@ -313,8 +342,9 @@ class MockCarePlatform implements CareSeekerPlatform {
     if (booking == null) {
       return;
     }
-    // A report returns the full amount charged. (FR-CS-17, FR-P-23)
-    final refunded = _refunded(booking, partial: false);
+    // A report during the session, or a physical button press, returns the
+    // full amount charged including the Grab fare. (FR-CS-17, FR-P-23)
+    final refunded = _refunded(booking, RefundReason.reportOrButtonPress);
     final refundNote = refunded.hasRefund
         ? ' ${formatIdr(refunded.refundAmount!)} refunded to you.'
         : ' Your payment will be refunded.';
@@ -480,7 +510,9 @@ class MockCarePlatform implements CareSeekerPlatform {
         booking
             .copyWith(
               status: BookingStatus.codeVerified,
-              safetyButtonId: 'BTN-${booking.id}',
+              // The platform activates a booking-linked, single-use button code.
+              // (FR-P-17)
+              buttonCode: ButtonCode.generate(bookingId: booking.id),
             )
             .withUpdate(
               BookingUpdate(
@@ -688,8 +720,11 @@ class MockCarePlatform implements CareSeekerPlatform {
   }
 
   Booking _failedVerification(Booking booking, String reason) {
-    // A failed verification is refunded: no session ran. (FR-P-19)
-    final refunded = _refunded(booking, partial: false);
+    // A failed verification cancels the booking and notifies support. The
+    // caregiver price and fee are refunded; the Grab fare is kept because the
+    // ride may already have been taken. (FR-P-18, FR-P-19)
+    // TODO(team): confirm keeping the Grab fare; the SRS is undecided.
+    final refunded = _refunded(booking, RefundReason.failedVerification);
     final refundNote =
         refunded.hasRefund ? ' ${formatIdr(refunded.refundAmount!)} refunded.' : '';
     return refunded
@@ -707,21 +742,37 @@ class MockCarePlatform implements CareSeekerPlatform {
         );
   }
 
-  /// Returns [booking] with a full or partial refund recorded when it was paid.
-  /// (FR-P-13, FR-CS-16, FR-P-19, FR-P-23)
-  Booking _refunded(Booking booking, {required bool partial}) {
+  /// Returns [booking] with the refund for [reason] recorded when it was paid.
+  ///
+  /// The amount comes from [RefundPolicy], so the mock and the real backend
+  /// always agree. The care seeker paid the whole total up front, including the
+  /// Grab fare. (FR-P-13, FR-P-19, FR-P-22, FR-P-23)
+  Booking _refunded(Booking booking, RefundReason reason) {
     final price = booking.price;
     if (price == null || !booking.isPaid) {
       return booking;
     }
+    final amount = RefundPolicy.refundFor(booking, reason);
     return booking.copyWith(
-      paymentStatus: partial
-          ? PaymentStatus.partiallyRefunded
-          : PaymentStatus.refunded,
-      refundAmount:
-          partial ? Pricing.earlyEndRefund(price) : price.total,
+      paymentStatus: RefundPolicy.isFullRefund(reason)
+          ? PaymentStatus.refunded
+          : PaymentStatus.partiallyRefunded,
+      refundAmount: amount,
     );
   }
+
+  /// Maps a cancellation to the refund rule that applies to it.
+  RefundReason _refundReasonFor(CancellationReason reason) => switch (reason) {
+        CancellationReason.failedVerification =>
+          RefundReason.failedVerification,
+        CancellationReason.preSessionDanger => RefundReason.dangerBeforeSession,
+        // No match, timeout or a user cancel before anything was used: the
+        // whole total is returned, Grab fare included. (FR-P-13)
+        CancellationReason.noMatch ||
+        CancellationReason.timeout ||
+        CancellationReason.userCancelled =>
+          RefundReason.noCaregiverAccepts,
+      };
 
   Caregiver? _nextMatchingCaregiver(GenderFilter filter) {
     for (final caregiver in MockData.caregivers) {

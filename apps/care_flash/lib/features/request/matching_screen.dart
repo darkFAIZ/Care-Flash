@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,24 +54,25 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Finding a caregiver'),
+        title: const AppText('Finding a caregiver'),
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.page,
         child: booking == null
-            ? _message(
-                theme,
-                Icons.info_outline,
-                'No active request',
-                'There is nothing to match right now.',
+            ? EmptyState(
+                icon: Icons.info_outline,
+                title: 'No active request',
+                message: 'There is nothing to match right now.',
+                actionLabel: 'Back home',
+                onAction: () => context.go(HomeShell.route),
               )
             : booking.status == BookingStatus.noMatch
                 ? _noMatch(theme, booking)
@@ -86,24 +88,26 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text(
+          const SizedBox(height: AppSpacing.lg),
+          AppText(
             matched ? 'Caregiver found' : 'Looking for a nearby caregiver…',
             style: theme.textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          Text(
+          const SizedBox(height: AppSpacing.sm),
+          AppText(
             'This usually takes under a minute. Please keep the app open.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          OutlinedButton(
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            label: 'Cancel request',
+            variant: AppButtonVariant.secondary,
             onPressed: _cancel,
-            child: const Text('Cancel request'),
+            expand: false,
           ),
         ],
       ),
@@ -114,15 +118,16 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> {
     final selected = _retryFilter ?? booking.genderFilter;
     return ListView(
       children: [
-        Icon(Icons.search_off, size: 64, color: theme.colorScheme.error),
-        const SizedBox(height: 16),
-        Text(
+        const SizedBox(height: AppSpacing.lg),
+        Icon(Icons.search_off_rounded, size: 64, color: theme.colorScheme.error),
+        const SizedBox(height: AppSpacing.lg),
+        AppText(
           'No caregiver found',
           style: theme.textTheme.titleLarge,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 8),
-        Text(
+        const SizedBox(height: AppSpacing.sm),
+        AppText(
           'No caregiver matches the current preference right now. Try a '
           'different gender preference, or cancel the request.',
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -130,63 +135,44 @@ class _MatchingScreenState extends ConsumerState<MatchingScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
-        Text('Caregiver preference', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.lg),
+        const SectionHeader(title: 'Caregiver preference'),
+        const SizedBox(height: AppSpacing.xs),
         for (final filter in GenderFilter.values) ...[
-          Card(
-            color: selected == filter
-                ? theme.colorScheme.secondaryContainer
-                : null,
-            child: ListTile(
-              leading: Icon(
-                selected == filter ? Icons.check_circle : Icons.person_outline,
-                color: selected == filter ? theme.colorScheme.primary : null,
-              ),
-              title: Text(filter.label),
-              onTap: () => setState(() => _retryFilter = filter),
+          AppCard(
+            compact: true,
+            highlighted: selected == filter,
+            onTap: () => setState(() => _retryFilter = filter),
+            child: Row(
+              children: [
+                Icon(
+                  selected == filter
+                      ? Icons.check_circle_rounded
+                      : Icons.person_outline,
+                  color: selected == filter
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(child: AppText(filter.label)),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
         ],
-        const SizedBox(height: 8),
-        FilledButton(
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Try again',
           onPressed: () =>
               ref.read(platformProvider).retryWithGenderFilter(selected),
-          child: const Text('Try again'),
         ),
-        const SizedBox(height: 8),
-        TextButton(onPressed: _cancel, child: const Text('Cancel request')),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          label: 'Cancel request',
+          variant: AppButtonVariant.ghost,
+          onPressed: _cancel,
+        ),
       ],
-    );
-  }
-
-  Widget _message(
-    ThemeData theme,
-    IconData icon,
-    String title,
-    String body,
-  ) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 56, color: theme.colorScheme.primary),
-          const SizedBox(height: 16),
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            body,
-            style: theme.textTheme.bodyMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: () => context.go(HomeShell.route),
-            child: const Text('Back home'),
-          ),
-        ],
-      ),
     );
   }
 }

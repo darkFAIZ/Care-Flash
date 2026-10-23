@@ -53,14 +53,10 @@ void main() {
     expect(find.text('Verify your account'), findsOneWidget);
 
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Student ID number'),
-      '1806123456',
+      find.widgetWithText(TextFormField, 'KTP number'),
+      '3174012501990001',
     );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'University'),
-      'Universitas Indonesia',
-    );
-    await tester.tap(find.text('Attach student ID photo'));
+    await tester.tap(find.text('Attach KTP photo'));
     await tester.pump();
     await tester.tap(find.text('Submit for review'));
     await tester.pump(const Duration(milliseconds: 10));

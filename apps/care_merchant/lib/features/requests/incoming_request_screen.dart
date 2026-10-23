@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,19 +60,22 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Decline this request?'),
-        content: const Text(
+        title: const AppText('Decline this request?'),
+        content: const AppText(
           'The care seeker will be offered to another caregiver. Declining '
           'does not affect your rating.',
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Keep viewing',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Keep viewing'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'Decline',
+            expand: false,
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Decline'),
           ),
         ],
       ),
@@ -95,45 +99,49 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
     if (booking == null) {
       // The request was withdrawn or expired. Send the caregiver back home.
       return Scaffold(
-        appBar: AppBar(title: const Text('Request')),
-        body: const Center(child: Text('This request is no longer available.')),
+        appBar: AppBar(title: const AppText('Request')),
+        body: const EmptyState(
+          icon: Icons.info_outline,
+          title: 'This request is no longer available.',
+        ),
       );
     }
 
     final remaining = _remaining(booking);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Request')),
+      appBar: AppBar(title: const AppText('Request')),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.page,
                 children: [
                   _countdownBanner(theme, remaining),
-                  const SizedBox(height: 16),
-                  Text(booking.requestReference,
+                  const SizedBox(height: AppSpacing.lg),
+                  AppText(booking.requestReference,
                       style: theme.textTheme.labelLarge),
-                  const SizedBox(height: 4),
-                  Text(booking.helpType.label,
+                  const SizedBox(height: AppSpacing.xs),
+                  AppText(booking.helpType.label,
                       style: theme.textTheme.headlineSmall),
                   if (booking.description != null) ...[
-                    const SizedBox(height: 8),
-                    Text(booking.description!, style: theme.textTheme.bodyLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(booking.description!,
+                        style: theme.textTheme.bodyLarge),
                   ],
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _metaCard(theme, booking),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _ExpectedPayCard(price: booking.price),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   BoundaryChecklistCard(checklist: booking.checklist),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _PrivacyNote(theme: theme),
                 ],
               ),
             ),
-            _actions(theme),
+            _actions(),
           ],
         ),
       ),
@@ -155,7 +163,7 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
           ? theme.colorScheme.errorContainer
           : theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         child: Row(
           children: [
             Icon(
@@ -164,9 +172,9 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
                   ? theme.colorScheme.onErrorContainer
                   : theme.colorScheme.onPrimaryContainer,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Text(
+              child: AppText(
                 seconds > 0
                     ? 'Respond within ${_formatDuration(remaining)}'
                     : 'The response window has closed.',
@@ -190,40 +198,47 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
   }
 
   Widget _metaCard(ThemeData theme, Booking booking) {
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.schedule),
-            title: const Text('Duration'),
-            trailing: Text(booking.duration.label),
+            leading: const Icon(Icons.schedule_rounded),
+            title: const AppText('Duration'),
+            trailing: AppText(booking.duration.label),
           ),
           ListTile(
-            leading: const Icon(Icons.event),
-            title: const Text('Requested for'),
-            trailing: Text(_formatDate(booking.scheduledAt)),
+            leading: const Icon(Icons.event_rounded),
+            title: const AppText('Requested for'),
+            trailing: AppText(_formatDate(booking.scheduledAt)),
           ),
         ],
       ),
     );
   }
 
-  Widget _actions(ThemeData theme) {
+  Widget _actions() {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageGutter,
+        AppSpacing.sm,
+        AppSpacing.pageGutter,
+        AppSpacing.lg,
+      ),
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
+            child: AppButton(
+              label: 'Decline',
+              variant: AppButtonVariant.secondary,
               onPressed: _busy ? null : _decline,
-              child: const Text('Decline'),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: FilledButton(
+            child: AppButton(
+              label: 'Accept',
               onPressed: _busy ? null : _accept,
-              child: const Text('Accept'),
             ),
           ),
         ],
@@ -248,37 +263,34 @@ class _ExpectedPayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.payments_outlined, color: theme.colorScheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Expected caregiver pay',
-                      style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Your service price for this visit. The platform fee and '
-                    'Grab fare are handled separately.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+    return AppCard(
+      child: Row(
+        children: [
+          Icon(Icons.payments_outlined, color: theme.colorScheme.primary),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppText('Expected caregiver pay',
+                    style: theme.textTheme.titleSmall),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(
+                  'Your service price for this visit. The care seeker pays the '
+                  'Grab fare separately, so it is never deducted from your pay.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (price != null)
-              Text(
-                formatIdr(price!.caregiverPrice),
-                style: theme.textTheme.titleMedium,
-              ),
-          ],
-        ),
+          ),
+          if (price != null)
+            AppText(
+              formatIdr(price!.caregiverPrice),
+              style: theme.textTheme.titleMedium,
+            ),
+        ],
       ),
     );
   }
@@ -294,10 +306,11 @@ class _PrivacyNote extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.lock_outline, size: 18, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
+        Icon(Icons.lock_outline,
+            size: 18, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Text(
+          child: AppText(
             'For privacy, the care seeker\'s location and verification code stay '
             'hidden until you accept the request.',
             style: theme.textTheme.bodySmall?.copyWith(

@@ -1,6 +1,7 @@
 import '../enums.dart';
 import 'account.dart';
 import 'boundary_checklist.dart';
+import 'button_code.dart';
 import 'location.dart';
 import 'payment.dart';
 import 'pricing.dart';
@@ -48,6 +49,8 @@ class Booking {
     required this.genderFilter,
     this.caregiver,
     this.price,
+    this.estimatedGrabFare,
+    this.actualGrabFare,
     this.paymentMethod,
     this.paymentStatus,
     this.refundAmount,
@@ -55,7 +58,7 @@ class Booking {
     this.clientCode,
     this.status = BookingStatus.draft,
     this.cancellationReason,
-    this.safetyButtonId,
+    this.buttonCode,
     this.outcome,
     required this.createdAt,
     this.updates = const [],
@@ -75,6 +78,20 @@ class Booking {
   final GenderFilter genderFilter;
   final Caregiver? caregiver;
   final PriceBreakdown? price;
+
+  /// Estimated Grab fare for the caregiver's trip to the care seeker. (FR-P-10,
+  /// FR-P-11)
+  ///
+  /// The care seeker pays this as part of the total. The caregiver never pays
+  /// for the ride.
+  final int? estimatedGrabFare;
+
+  /// Grab fare actually charged, once known. It is usually the estimate, so it
+  /// starts null. (FR-P-10)
+  /// TODO(team): decide what happens when the real fare differs from the
+  /// estimate. The SRS has not set a rule, so nothing is recomputed.
+  final int? actualGrabFare;
+
   final PaymentMethod? paymentMethod;
 
   /// Status of the care seeker's payment for this booking, once it is paid.
@@ -98,12 +115,36 @@ class Booking {
   final BookingStatus status;
   final CancellationReason? cancellationReason;
 
-  /// Booking-linked safety-button identifier. (HI-1, FR-P-17)
-  final String? safetyButtonId;
+  /// Booking-linked safety-button code, activated after the client code is
+  /// verified and checked by the CARE SEEKER's scan. (HI-1, FR-P-17, FR-P-18)
+  final ButtonCode? buttonCode;
 
   final SessionOutcome? outcome;
   final DateTime createdAt;
   final List<BookingUpdate> updates;
+
+  /// The QR/NFC payload of the safety button, or `null` before it is
+  /// activated. Kept for display and for the care seeker's scan.
+  String? get safetyButtonId => buttonCode?.payload;
+
+  /// Grab fare the care seeker actually pays for this booking: the real fare
+  /// when known, otherwise the estimate. (FR-P-11)
+  ///
+  /// This is the amount the platform charges the care seeker; it is not part
+  /// of the caregiver's earnings.
+  int get effectiveGrabFare =>
+      actualGrabFare ?? estimatedGrabFare ?? price?.grabFare ?? 0;
+
+  /// Checks a scanned safety-button payload. Returns `null` when the platform
+  /// accepts the scan, otherwise the reason the booking must be cancelled.
+  /// (FR-P-18)
+  ButtonCodeFailure? validateButtonPayload(String payload, {DateTime? now}) {
+    final code = buttonCode;
+    if (code == null) {
+      return ButtonCodeFailure.noCode;
+    }
+    return code.validate(id, payload, now ?? DateTime.now());
+  }
 
   int get durationMinutes => duration.minutes;
 
@@ -156,6 +197,8 @@ class Booking {
     GenderFilter? genderFilter,
     Object? caregiver = _unset,
     Object? price = _unset,
+    Object? estimatedGrabFare = _unset,
+    Object? actualGrabFare = _unset,
     Object? paymentMethod = _unset,
     Object? paymentStatus = _unset,
     Object? refundAmount = _unset,
@@ -163,7 +206,7 @@ class Booking {
     Object? clientCode = _unset,
     BookingStatus? status,
     Object? cancellationReason = _unset,
-    Object? safetyButtonId = _unset,
+    Object? buttonCode = _unset,
     Object? outcome = _unset,
     List<BookingUpdate>? updates,
   }) {
@@ -179,6 +222,11 @@ class Booking {
       genderFilter: genderFilter ?? this.genderFilter,
       caregiver: caregiver == _unset ? this.caregiver : caregiver as Caregiver?,
       price: price == _unset ? this.price : price as PriceBreakdown?,
+      estimatedGrabFare: estimatedGrabFare == _unset
+          ? this.estimatedGrabFare
+          : estimatedGrabFare as int?,
+      actualGrabFare:
+          actualGrabFare == _unset ? this.actualGrabFare : actualGrabFare as int?,
       paymentMethod:
           paymentMethod == _unset ? this.paymentMethod : paymentMethod as PaymentMethod?,
       paymentStatus:
@@ -192,8 +240,7 @@ class Booking {
       cancellationReason: cancellationReason == _unset
           ? this.cancellationReason
           : cancellationReason as CancellationReason?,
-      safetyButtonId:
-          safetyButtonId == _unset ? this.safetyButtonId : safetyButtonId as String?,
+      buttonCode: buttonCode == _unset ? this.buttonCode : buttonCode as ButtonCode?,
       outcome: outcome == _unset ? this.outcome : outcome as SessionOutcome?,
       createdAt: createdAt,
       updates: updates ?? this.updates,
@@ -216,6 +263,8 @@ class Booking {
         'genderFilter': genderFilter.name,
         'caregiver': caregiver?.toJson(),
         'price': price?.toJson(),
+        'estimatedGrabFare': estimatedGrabFare,
+        'actualGrabFare': actualGrabFare,
         'paymentMethod': paymentMethod?.toJson(),
         'paymentStatus': paymentStatus?.name,
         'refundAmount': refundAmount,
@@ -223,7 +272,7 @@ class Booking {
         'clientCode': clientCode,
         'status': status.name,
         'cancellationReason': cancellationReason?.name,
-        'safetyButtonId': safetyButtonId,
+        'buttonCode': buttonCode?.toJson(),
         'outcome': outcome?.name,
         'createdAt': createdAt.toIso8601String(),
         'updates': updates.map((update) => update.toJson()).toList(),
@@ -235,6 +284,7 @@ class Booking {
     final paymentMethodJson = json['paymentMethod'];
     final paymentStatus = json['paymentStatus'];
     final cancellationReason = json['cancellationReason'];
+    final buttonCodeJson = json['buttonCode'];
     final outcome = json['outcome'];
 
     return Booking(
@@ -255,6 +305,8 @@ class Booking {
       price: priceJson == null
           ? null
           : PriceBreakdown.fromJson(priceJson as Map<String, Object?>),
+      estimatedGrabFare: json['estimatedGrabFare'] as int?,
+      actualGrabFare: json['actualGrabFare'] as int?,
       paymentMethod: paymentMethodJson == null
           ? null
           : PaymentMethod.fromJson(paymentMethodJson as Map<String, Object?>),
@@ -268,7 +320,9 @@ class Booking {
       cancellationReason: cancellationReason == null
           ? null
           : CancellationReason.values.byName(cancellationReason as String),
-      safetyButtonId: json['safetyButtonId'] as String?,
+      buttonCode: buttonCodeJson == null
+          ? null
+          : ButtonCode.fromJson(buttonCodeJson as Map<String, Object?>),
       outcome: outcome == null
           ? null
           : SessionOutcome.values.byName(outcome as String),

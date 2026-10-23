@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:care_domain/care_domain.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backend_client.dart';
 
@@ -13,10 +14,18 @@ import 'backend_client.dart';
 class RemoteCaregiverPlatform implements CaregiverPlatform {
   RemoteCaregiverPlatform(this._client) {
     _subscription = _client.snapshots.listen(_applySnapshot);
+    _reconnectSubscription =
+        _client.reconnected.listen((_) => _restoreSession());
   }
 
   final CareBackendClient _client;
   late final StreamSubscription<Map<String, Object?>> _subscription;
+  late final StreamSubscription<void> _reconnectSubscription;
+
+  /// Where the backend session token is kept between app launches.
+  static const _tokenKey = 'backend.token.caregiver';
+
+  String? _token;
 
   final StreamController<CaregiverAccount?> _caregiverController =
       StreamController<CaregiverAccount?>.broadcast();
@@ -41,10 +50,44 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   List<FeedbackReceived> _feedbackReceived = const [];
   List<CareSeekerRating> _careSeekerRatings = const [];
 
-  Future<void> connect() => _client.connect();
+  Future<void> connect() async {
+    await _client.connect();
+    await _restoreSession();
+  }
+
+  /// Signs this app back in with the token saved on the last launch.
+  Future<void> _restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_tokenKey);
+    if (token == null) return;
+    try {
+      final result = await _client.call('authToken', {'token': token});
+      if (result is Map && result['resume'] == true) {
+        _token = token;
+        _caregiver =
+            CaregiverAccount.fromJson(result['user']! as Map<String, Object?>);
+        _caregiverController.add(_caregiver);
+      } else {
+        await prefs.remove(_tokenKey);
+      }
+    } on BackendException {
+      await prefs.remove(_tokenKey);
+    }
+  }
+
+  Future<void> _rememberToken(String? token) async {
+    _token = token;
+    final prefs = await SharedPreferences.getInstance();
+    if (token == null) {
+      await prefs.remove(_tokenKey);
+    } else {
+      await prefs.setString(_tokenKey, token);
+    }
+  }
 
   void dispose() {
     _subscription.cancel();
+    _reconnectSubscription.cancel();
     _caregiverController.close();
     _incomingController.close();
     _activeController.close();
@@ -117,6 +160,7 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
     final result = await _call(op, args);
     if (result['success'] == true) {
       _caregiver = CaregiverAccount.fromJson(result['user']! as Map<String, Object?>);
+      await _rememberToken(result['token'] as String?);
       _caregiverController.add(_caregiver);
       return CaregiverAuthResult.success(_caregiver!);
     }
@@ -125,19 +169,35 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
 
   @override
   Future<void> signOut() async {
+    final token = _token;
     _caregiver = null;
     _caregiverController.add(null);
+    await _rememberToken(null);
+    if (token != null) {
+      try {
+        await _callVoid('signOut', {'token': token});
+      } on BackendException {
+        // The local session is already gone; the server token expires on its
+        // own if the connection is down.
+      }
+    }
   }
 
   @override
+  Future<void> updateProfile({required String name}) =>
+      _callVoid('updateCaregiverProfile', {'name': name});
+
+  @override
+  Future<void> updateAvatar({String? avatarDataUrl}) =>
+      _callVoid('updateCaregiverAvatar', {'avatarDataUrl': avatarDataUrl});
+
+  @override
   Future<void> submitVerification({
-    required String studentIdNumber,
-    required String university,
+    required String ktpNumber,
     required String documentLabel,
   }) =>
       _callVoid('submitVerification', {
-        'studentIdNumber': studentIdNumber,
-        'university': university,
+        'ktpNumber': ktpNumber,
         'documentLabel': documentLabel,
       });
 

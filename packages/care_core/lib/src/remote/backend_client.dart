@@ -27,28 +27,72 @@ class CareBackendClient {
 
   final StreamController<Map<String, Object?>> _snapshots =
       StreamController<Map<String, Object?>>.broadcast();
+  final StreamController<void> _reconnects = StreamController<void>.broadcast();
   final Map<int, Completer<Object?>> _pending = {};
 
   WebSocketChannel? _channel;
   int _nextRequest = 1;
+  bool _closed = false;
+  Timer? _retryTimer;
+  int _retryAttempt = 0;
 
   /// Snapshots pushed by the backend, one per operation after sign-in.
   Stream<Map<String, Object?>> get snapshots => _snapshots.stream;
+
+  /// Fires after the client reconnects on its own, so the platform can restore
+  /// its session token (the new connection starts signed out).
+  Stream<void> get reconnected => _reconnects.stream;
 
   bool get isConnected => _channel != null;
 
   /// Opens the connection. Call once before using the platform.
   Future<void> connect() async {
+    _closed = false;
+    await _open();
+  }
+
+  Future<void> _open() async {
     if (_channel != null) return;
     final channel = WebSocketChannel.connect(Uri.parse(url));
     await channel.ready;
+    if (_closed) {
+      await channel.sink.close();
+      return;
+    }
     _channel = channel;
+    _retryAttempt = 0;
     channel.stream.listen(
       _onData,
-      onDone: () => _failAll(const BackendException('The backend connection closed.')),
-      onError: (Object error) => _failAll(BackendException('$error')),
+      onDone: () => _onConnectionLost(channel),
+      onError: (Object error) {
+        _failAll(BackendException('$error'));
+        _onConnectionLost(channel);
+      },
       cancelOnError: true,
     );
+  }
+
+  void _onConnectionLost(WebSocketChannel channel) {
+    if (!identical(_channel, channel)) return;
+    _channel = null;
+    _failAll(const BackendException('The backend connection closed.'));
+    if (!_closed) _scheduleReconnect();
+  }
+
+  void _scheduleReconnect() {
+    _retryTimer?.cancel();
+    // Back off 1s, 2s, 4s, then every 8s, so a restarted backend is picked up
+    // without hammering it.
+    final seconds = _retryAttempt == 0 ? 1 : (1 << (_retryAttempt - 1)).clamp(1, 8).toInt();
+    _retryAttempt++;
+    _retryTimer = Timer(Duration(seconds: seconds), () async {
+      try {
+        await _open();
+        if (isConnected) _reconnects.add(null);
+      } catch (_) {
+        if (!_closed) _scheduleReconnect();
+      }
+    });
   }
 
   /// Sends an operation and completes with its result value.
@@ -67,6 +111,9 @@ class CareBackendClient {
   }
 
   Future<void> close() async {
+    _closed = true;
+    _retryTimer?.cancel();
+    _retryTimer = null;
     await _channel?.sink.close();
     _channel = null;
   }

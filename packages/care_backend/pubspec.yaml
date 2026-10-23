@@ -11,6 +11,7 @@ resolution: workspace
 dependencies:
   care_domain:
     path: ../care_domain
+  crypto: ^3.0.0
 
 dev_dependencies:
   lints: ^6.0.0

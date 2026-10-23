@@ -7,6 +7,7 @@ class CareSeeker {
     required this.name,
     required this.email,
     this.phone,
+    this.avatarDataUrl,
   });
 
   final String id;
@@ -14,12 +15,26 @@ class CareSeeker {
   final String email;
   final String? phone;
 
-  CareSeeker copyWith({String? name, String? email, String? phone}) {
+  /// Optional profile photo as a `data:image/...;base64,...` string. Stored
+  /// this way so the demo needs no file server. TODO(team): replace with an
+  /// upload URL when the real API exists.
+  final String? avatarDataUrl;
+
+  static const Object _unset = Object();
+
+  CareSeeker copyWith({
+    String? name,
+    String? email,
+    Object? phone = _unset,
+    Object? avatarDataUrl = _unset,
+  }) {
     return CareSeeker(
       id: id,
       name: name ?? this.name,
       email: email ?? this.email,
-      phone: phone ?? this.phone,
+      phone: phone == _unset ? this.phone : phone as String?,
+      avatarDataUrl:
+          avatarDataUrl == _unset ? this.avatarDataUrl : avatarDataUrl as String?,
     );
   }
 
@@ -28,6 +43,7 @@ class CareSeeker {
         'name': name,
         'email': email,
         'phone': phone,
+        'avatarDataUrl': avatarDataUrl,
       };
 
   factory CareSeeker.fromJson(Map<String, Object?> json) => CareSeeker(
@@ -35,10 +51,11 @@ class CareSeeker {
         name: json['name']! as String,
         email: json['email']! as String,
         phone: json['phone'] as String?,
+        avatarDataUrl: json['avatarDataUrl'] as String?,
       );
 }
 
-/// A verified student caregiver (Care-Merchant user).
+/// A verified caregiver (Care-Merchant user).
 ///
 /// Only the fields both apps need are kept here. Bio/profile extras were
 /// explicitly left out of scope (AGENTS.md §3).
@@ -49,9 +66,10 @@ class Caregiver {
     required this.gender,
     this.rating = 0,
     this.reviewCount = 0,
-    this.studentVerified = true,
+    this.identityVerified = true,
     this.safetyBadge = true,
     this.availability = CaregiverAvailability.available,
+    this.avatarDataUrl,
   });
 
   final String id;
@@ -60,13 +78,16 @@ class Caregiver {
   final double rating;
   final int reviewCount;
 
-  /// True when the platform verified the caregiver's student identity. (FR-P-2)
-  final bool studentVerified;
+  /// True when the platform verified the caregiver's KTP identity. (FR-P-2)
+  final bool identityVerified;
 
   /// True after the caregiver completed the safety module. (FR-P-2, FR-CM-4)
   final bool safetyBadge;
 
   final CaregiverAvailability availability;
+
+  /// Optional profile photo as a data URL. Shown on the matched-caregiver card.
+  final String? avatarDataUrl;
 
   String get firstName => name.split(' ').first;
 
@@ -79,7 +100,7 @@ class Caregiver {
     Gender? gender,
     double? rating,
     int? reviewCount,
-    bool? studentVerified,
+    bool? identityVerified,
     bool? safetyBadge,
     CaregiverAvailability? availability,
   }) {
@@ -89,9 +110,10 @@ class Caregiver {
       gender: gender ?? this.gender,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
-      studentVerified: studentVerified ?? this.studentVerified,
+      identityVerified: identityVerified ?? this.identityVerified,
       safetyBadge: safetyBadge ?? this.safetyBadge,
       availability: availability ?? this.availability,
+      avatarDataUrl: avatarDataUrl,
     );
   }
 
@@ -101,9 +123,10 @@ class Caregiver {
         'gender': gender.name,
         'rating': rating,
         'reviewCount': reviewCount,
-        'studentVerified': studentVerified,
+        'identityVerified': identityVerified,
         'safetyBadge': safetyBadge,
         'availability': availability.name,
+        'avatarDataUrl': avatarDataUrl,
       };
 
   factory Caregiver.fromJson(Map<String, Object?> json) => Caregiver(
@@ -112,10 +135,14 @@ class Caregiver {
         gender: Gender.values.byName(json['gender']! as String),
         rating: (json['rating'] as num?)?.toDouble() ?? 0,
         reviewCount: json['reviewCount'] as int? ?? 0,
-        studentVerified: json['studentVerified'] as bool? ?? true,
+        // `studentVerified` is the pre-KTP key, kept so saved demo data loads.
+        identityVerified: json['identityVerified'] as bool? ??
+            json['studentVerified'] as bool? ??
+            true,
         safetyBadge: json['safetyBadge'] as bool? ?? true,
         availability:
             CaregiverAvailability.values.byName(json['availability'] as String? ?? 'available'),
+        avatarDataUrl: json['avatarDataUrl'] as String?,
       );
 }
 

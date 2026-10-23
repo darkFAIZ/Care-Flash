@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -77,17 +78,18 @@ class _ReportCareSeekerScreenState
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Report sent'),
-        content: const Text(
+        title: const AppText('Report sent'),
+        content: const AppText(
           'Support received your report and evidence. The session ended.',
         ),
         actions: [
-          FilledButton(
+          AppButton(
+            label: 'Back home',
+            expand: false,
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.go(HomeShell.route);
             },
-            child: const Text('Back home'),
           ),
         ],
       ),
@@ -101,37 +103,37 @@ class _ReportCareSeekerScreenState
     final active = booking != null && booking.isSessionActive;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report the care seeker')),
+      appBar: AppBar(title: const AppText('Report the care seeker')),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.page,
                 children: [
-                  Text(
+                  AppText(
                     'Tell us what happened. Your report goes to support and the '
                     'care seeker is not shown your identity.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   TextField(
                     controller: _description,
                     maxLines: 5,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      labelText: 'What happened?',
+                    decoration: InputDecoration(
+                      labelText: trText(context, 'What happened?'),
                       alignLabelWithHint: true,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text('Evidence', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppText('Evidence', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.sm),
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     children: [
                       _addButton(Icons.photo_outlined, 'Add photo',
                           () => _addEvidence(EvidenceKind.photo)),
@@ -142,7 +144,7 @@ class _ReportCareSeekerScreenState
                     ],
                   ),
                   if (_evidence.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     ..._evidence.map(
                       (item) => ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -153,9 +155,10 @@ class _ReportCareSeekerScreenState
                             EvidenceKind.note => Icons.note_outlined,
                           },
                         ),
-                        title: Text(item.label),
+                        title: AppText(item.label),
                         trailing: IconButton(
-                          icon: const Icon(Icons.close),
+                          tooltip: trText(context, 'Remove ${item.label}'),
+                          icon: const Icon(Icons.close_rounded),
                           onPressed: () =>
                               setState(() => _evidence.remove(item)),
                         ),
@@ -163,11 +166,11 @@ class _ReportCareSeekerScreenState
                     ),
                   ],
                   if (_error != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
+                    const SizedBox(height: AppSpacing.md),
+                    AppText(
                       _error!,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
+                        color: AppSemanticColors.of(context).danger,
                       ),
                     ),
                   ],
@@ -175,16 +178,17 @@ class _ReportCareSeekerScreenState
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageGutter,
+                AppSpacing.sm,
+                AppSpacing.pageGutter,
+                AppSpacing.lg,
+              ),
+              child: AppButton(
+                label: 'Submit report',
+                variant: AppButtonVariant.danger,
+                loading: _busy,
                 onPressed: _busy || !active ? null : () => _submit(booking),
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit report'),
               ),
             ),
           ],
@@ -194,9 +198,11 @@ class _ReportCareSeekerScreenState
   }
 
   Widget _addButton(IconData icon, String label, VoidCallback onTap) =>
-      OutlinedButton.icon(
+      AppButton(
+        label: label,
+        icon: icon,
+        variant: AppButtonVariant.secondary,
+        expand: false,
         onPressed: onTap,
-        icon: Icon(icon),
-        label: Text(label),
       );
 }

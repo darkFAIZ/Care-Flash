@@ -37,22 +37,22 @@ class _HomeShellState extends State<HomeShell> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.inbox_outlined),
-            selectedIcon: Icon(Icons.inbox),
+            selectedIcon: Icon(Icons.inbox_rounded),
             label: 'Requests',
           ),
           NavigationDestination(
             icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
+            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
             label: 'Earnings',
           ),
           NavigationDestination(
             icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
+            selectedIcon: Icon(Icons.chat_bubble_rounded),
             label: 'Feedback',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],

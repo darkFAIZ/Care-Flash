@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,15 +60,17 @@ class _ClientCodeScreenState extends ConsumerState<ClientCodeScreen> {
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Verification failed'),
-        content: Text(message),
+        title: const AppText('Verification failed'),
+        content: AppText(message),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Back home',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.go(HomeShell.route);
             },
-            child: const Text('Back home'),
           ),
         ],
       ),
@@ -81,10 +84,10 @@ class _ClientCodeScreenState extends ConsumerState<ClientCodeScreen> {
     final code = kDebugMode ? ref.read(platformProvider).debugClientCode : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Client code')),
+      appBar: AppBar(title: const AppText('Care seeker code')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.page,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -93,22 +96,23 @@ class _ClientCodeScreenState extends ConsumerState<ClientCodeScreen> {
                 size: 56,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(height: 16),
-              Text(
+              const SizedBox(height: AppSpacing.lg),
+              AppText(
                 'Ask the care seeker for their 6-digit client code.',
                 style: theme.textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'The code confirms you are with the right care seeker. The '
-                'session cannot start until it matches.',
+              const SizedBox(height: AppSpacing.sm),
+              AppText(
+                "The code is created by the care seeker's app after payment. "
+                'You type it in to verify the client: you never generate this '
+                'code yourself. The session cannot start until it matches.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               TextField(
                 controller: _controller,
                 keyboardType: TextInputType.number,
@@ -117,18 +121,18 @@ class _ClientCodeScreenState extends ConsumerState<ClientCodeScreen> {
                 style: theme.textTheme.headlineMedium?.copyWith(
                   letterSpacing: 8,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Client code',
+                decoration: InputDecoration(
+                  labelText: trText(context, 'Client code'),
                   hintText: '000000',
                   counterText: '',
                 ),
                 onSubmitted: (_) => _busy ? null : _verify(),
               ),
               if (code != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 // Debug only: another device would show this on the care
                 // seeker's screen. (FR-CM-13)
-                Text(
+                AppText(
                   'Demo: the care seeker\'s code is $code',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -137,25 +141,20 @@ class _ClientCodeScreenState extends ConsumerState<ClientCodeScreen> {
                 ),
               ],
               if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
+                const SizedBox(height: AppSpacing.md),
+                AppText(
                   _error!,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.error,
+                    color: AppSemanticColors.of(context).danger,
                   ),
                   textAlign: TextAlign.center,
                 ),
               ],
               const Spacer(),
-              FilledButton(
+              AppButton(
+                label: 'Verify code',
+                loading: _busy,
                 onPressed: _busy || booking == null ? null : _verify,
-                child: _busy
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Verify code'),
               ),
             ],
           ),

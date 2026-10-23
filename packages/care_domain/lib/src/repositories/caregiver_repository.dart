@@ -34,10 +34,17 @@ abstract interface class CaregiverRepository {
 
   Future<void> signOut();
 
-  /// Submits student identity details for platform review. (FR-CM-2)
+  /// Updates the caregiver's profile details shown across the app. Gender has
+  /// its own [updateGender] because matching depends on it. (Phase 5)
+  Future<void> updateProfile({required String name});
+
+  /// Sets or clears the caregiver's profile photo. [avatarDataUrl] is a
+  /// `data:image/...;base64,...` string, or null to remove the photo.
+  Future<void> updateAvatar({String? avatarDataUrl});
+
+  /// Submits KTP identity details for platform review. (FR-CM-2)
   Future<void> submitVerification({
-    required String studentIdNumber,
-    required String university,
+    required String ktpNumber,
     required String documentLabel,
   });
 

@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import 'matching_screen.dart';
 import 'request_draft.dart';
-import 'widgets/price_breakdown_card.dart';
+import 'widgets/price_estimate_card.dart';
 import 'widgets/wizard_scaffold.dart';
 
 /// Step 4: caregiver gender preference plus the preliminary estimate, which is
@@ -42,35 +43,33 @@ class GenderFilterScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Preferred caregiver gender',
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
+          const SectionHeader(title: 'Preferred caregiver gender'),
+          const SizedBox(height: AppSpacing.sm),
           for (final filter in GenderFilter.values) ...[
-            Card(
-              color: draft.genderFilter == filter
-                  ? theme.colorScheme.secondaryContainer
-                  : null,
-              child: ListTile(
-                leading: Icon(
-                  draft.genderFilter == filter
-                      ? Icons.check_circle
-                      : Icons.person_outline,
-                  color: draft.genderFilter == filter
-                      ? theme.colorScheme.primary
-                      : null,
-                ),
-                title: Text(filter.label),
-                onTap: () => controller.setGenderFilter(filter),
+            AppCard(
+              highlighted: draft.genderFilter == filter,
+              onTap: () => controller.setGenderFilter(filter),
+              child: Row(
+                children: [
+                  Icon(
+                    draft.genderFilter == filter
+                        ? Icons.check_circle_rounded
+                        : Icons.person_outline,
+                    color: draft.genderFilter == filter
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: AppText(filter.label)),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
-          const SizedBox(height: 12),
-          PriceBreakdownCard(price: price, title: 'Preliminary estimate'),
-          const SizedBox(height: 8),
-          Text(
+          const SizedBox(height: AppSpacing.md),
+          PriceEstimateCard(price: price, title: 'Preliminary estimate'),
+          const SizedBox(height: AppSpacing.sm),
+          AppText(
             'The final price is confirmed after a caregiver is matched. '
             'Payment is only taken once you approve it.',
             style: theme.textTheme.bodySmall?.copyWith(

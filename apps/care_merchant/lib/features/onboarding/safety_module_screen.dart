@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,34 +62,34 @@ class _SafetyModuleScreenState extends ConsumerState<SafetyModuleScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Safety module')),
+      appBar: AppBar(title: const AppText('Safety module')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: AppSpacing.page,
           children: [
-            Text(
+            AppText(
               'Four things every caregiver should know.',
               style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             ..._lessons.map(
               (lesson) => Card(
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: AppSpacing.page,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(lesson.icon, color: theme.colorScheme.primary),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(lesson.title,
+                            AppText(lesson.title,
                                 style: theme.textTheme.titleSmall),
-                            const SizedBox(height: 4),
-                            Text(lesson.body,
+                            const SizedBox(height: AppSpacing.xs),
+                            AppText(lesson.body,
                                 style: theme.textTheme.bodyMedium),
                           ],
                         ),
@@ -98,16 +99,11 @@ class _SafetyModuleScreenState extends ConsumerState<SafetyModuleScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            FilledButton(
+            const SizedBox(height: AppSpacing.sm),
+            AppButton(
+              label: 'Complete the module',
+              loading: _busy,
               onPressed: _busy ? null : _complete,
-              child: _busy
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Complete the module'),
             ),
           ],
         ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -72,19 +73,23 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('End the session early?'),
-        content: const Text(
+        title: const AppText('End the session early?'),
+        content: const AppText(
           'The caregiver is paid for the time already spent. The unused part '
           'of the visit is refunded to you.',
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Keep going',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Keep going'),
           ),
-          FilledButton(
+          AppButton(
+            label: 'End early',
+            variant: AppButtonVariant.danger,
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('End early'),
           ),
         ],
       ),
@@ -113,31 +118,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
     if (booking == null || booking.status != BookingStatus.active) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Session')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.event_available_outlined,
-                  size: 56,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'There is no session running right now.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        appBar: AppBar(title: const AppText('Session')),
+        body: EmptyState(
+          icon: Icons.event_available_outlined,
+          title: 'There is no session running right now.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
@@ -149,72 +135,64 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Session in progress'),
+        title: const AppText('Session in progress'),
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         children: [
           _StatusCard(elapsed: elapsed, location: booking.location.label),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
           if (caregiver != null) ...[
             _CaregiverCard(caregiver: caregiver),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
           ],
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.shield_outlined,
-                          color: theme.colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text('Safety button',
-                          style: theme.textTheme.titleMedium),
-                    ],
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SectionHeader(
+                  title: 'Safety button',
+                  trailing: Icon(
+                    Icons.shield_outlined,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'The booking-linked safety button is with you. Press its '
-                    'physical button at any time to instantly report an '
-                    'emergency and end the session.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(
+                  'The booking-linked safety button is with you. Press its '
+                  'physical button at any time to instantly report an '
+                  'emergency and end the session.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Help type', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(booking.helpType.label),
-                  const SizedBox(height: 12),
-                  Text('Visit window', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${formatVisitTime(booking.scheduledAt)} · '
-                    '${booking.duration.label}',
-                  ),
-                ],
-              ),
+          const SizedBox(height: AppSpacing.lg),
+          AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppText('Help type', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(booking.helpType.label),
+                const SizedBox(height: AppSpacing.md),
+                AppText('Visit window', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.xs),
+                AppText(
+                  '${formatVisitTime(booking.scheduledAt)} · '
+                  '${booking.duration.label}',
+                ),
+              ],
             ),
           ),
         ],
@@ -222,21 +200,30 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.pageGutter,
+            AppSpacing.sm,
+            AppSpacing.pageGutter,
+            AppSpacing.lg,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FilledButton.icon(
+              // Report is red and prominent on purpose so it never reads the
+              // same as End Early. (AGENTS.md §5)
+              AppButton(
+                label: 'Report a problem',
+                icon: Icons.support_agent_rounded,
+                variant: AppButtonVariant.danger,
                 onPressed: () => context.push(ReportScreen.route),
-                icon: const Icon(Icons.support_agent),
-                label: const Text('Report a problem'),
               ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: 'End session early',
+                icon: Icons.stop_circle_outlined,
+                variant: AppButtonVariant.secondary,
                 onPressed: _endEarly,
-                icon: const Icon(Icons.stop_circle_outlined),
-                label: const Text('End session early'),
               ),
             ],
           ),
@@ -264,16 +251,16 @@ class _StatusCard extends StatelessWidget {
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.page,
         child: Column(
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.directions_run,
+                Icon(Icons.directions_run_rounded,
                     color: theme.colorScheme.onPrimaryContainer),
-                const SizedBox(width: 8),
-                Text(
+                const SizedBox(width: AppSpacing.sm),
+                AppText(
                   'Session running',
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: theme.colorScheme.onPrimaryContainer,
@@ -281,23 +268,23 @@ class _StatusCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
+            const SizedBox(height: AppSpacing.md),
+            AppText(
               _elapsedLabel(elapsed),
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               'Time spent with your caregiver',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
+            const SizedBox(height: AppSpacing.md),
+            AppText(
               location,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
@@ -317,16 +304,13 @@ class _CaregiverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          child: Text(caregiver.name.isNotEmpty ? caregiver.name[0] : '?'),
-        ),
-        title: Text(caregiver.name),
-        subtitle: Text(caregiver.ratingLabel),
-        trailing: const Icon(Icons.star, color: Colors.amber),
+        leading: UserAvatar(name: caregiver.name, radius: 20),
+        title: AppText(caregiver.name),
+        subtitle: AppText(caregiver.ratingLabel),
+        trailing: const Icon(Icons.star_rounded, color: Colors.amber),
       ),
     );
   }

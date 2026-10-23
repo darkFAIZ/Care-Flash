@@ -4,7 +4,7 @@ import 'account.dart';
 /// A caregiver's account including its onboarding state. (FR-CM-1 to FR-CM-6)
 ///
 /// Care-Merchant works with this type. Care-Flash only ever sees the public
-/// [Caregiver] profile produced by [toPublic], so student identity details stay
+/// [Caregiver] profile produced by [toPublic], so KTP identity details stay
 /// private to the caregiver app. (DC-CM-3)
 class CaregiverAccount {
   const CaregiverAccount({
@@ -18,10 +18,10 @@ class CaregiverAccount {
     this.rejectionReason,
     this.safetyModuleCompleted = false,
     this.availability = CaregiverAvailability.available,
-    this.studentIdNumber,
-    this.university,
-    this.studentIdDocumentLabel,
+    this.ktpNumber,
+    this.ktpDocumentLabel,
     this.verificationSubmittedAt,
+    this.avatarDataUrl,
   });
 
   final String id;
@@ -34,7 +34,7 @@ class CaregiverAccount {
   final double rating;
   final int reviewCount;
 
-  /// Platform review state for the submitted student identity. (FR-CM-2, FR-CM-3)
+  /// Platform review state for the submitted KTP identity. (FR-CM-2, FR-CM-3)
   final VerificationStatus verificationStatus;
 
   /// Why the platform rejected the submission, when [verificationStatus] is
@@ -48,10 +48,12 @@ class CaregiverAccount {
   final CaregiverAvailability availability;
 
   // Onboarding details the caregiver submitted. (FR-CM-2)
-  final String? studentIdNumber;
-  final String? university;
-  final String? studentIdDocumentLabel;
+  final String? ktpNumber;
+  final String? ktpDocumentLabel;
   final DateTime? verificationSubmittedAt;
+
+  /// Optional profile photo as a data URL, shown to care seekers when matched.
+  final String? avatarDataUrl;
 
   String get firstName => name.split(' ').first;
 
@@ -81,9 +83,10 @@ class CaregiverAccount {
         gender: gender,
         rating: rating,
         reviewCount: reviewCount,
-        studentVerified: isVerified,
+        identityVerified: isVerified,
         safetyBadge: safetyModuleCompleted,
         availability: availability,
+        avatarDataUrl: avatarDataUrl,
       );
 
   static const Object _unset = Object();
@@ -97,10 +100,10 @@ class CaregiverAccount {
     Object? rejectionReason = _unset,
     bool? safetyModuleCompleted,
     CaregiverAvailability? availability,
-    Object? studentIdNumber = _unset,
-    Object? university = _unset,
-    Object? studentIdDocumentLabel = _unset,
+    Object? ktpNumber = _unset,
+    Object? ktpDocumentLabel = _unset,
     Object? verificationSubmittedAt = _unset,
+    Object? avatarDataUrl = _unset,
   }) {
     return CaregiverAccount(
       id: id,
@@ -115,16 +118,17 @@ class CaregiverAccount {
           : rejectionReason as String?,
       safetyModuleCompleted: safetyModuleCompleted ?? this.safetyModuleCompleted,
       availability: availability ?? this.availability,
-      studentIdNumber: studentIdNumber == _unset
-          ? this.studentIdNumber
-          : studentIdNumber as String?,
-      university: university == _unset ? this.university : university as String?,
-      studentIdDocumentLabel: studentIdDocumentLabel == _unset
-          ? this.studentIdDocumentLabel
-          : studentIdDocumentLabel as String?,
+      ktpNumber: ktpNumber == _unset
+          ? this.ktpNumber
+          : ktpNumber as String?,
+      ktpDocumentLabel: ktpDocumentLabel == _unset
+          ? this.ktpDocumentLabel
+          : ktpDocumentLabel as String?,
       verificationSubmittedAt: verificationSubmittedAt == _unset
           ? this.verificationSubmittedAt
           : verificationSubmittedAt as DateTime?,
+      avatarDataUrl:
+          avatarDataUrl == _unset ? this.avatarDataUrl : avatarDataUrl as String?,
     );
   }
 
@@ -139,10 +143,10 @@ class CaregiverAccount {
         'rejectionReason': rejectionReason,
         'safetyModuleCompleted': safetyModuleCompleted,
         'availability': availability.name,
-        'studentIdNumber': studentIdNumber,
-        'university': university,
-        'studentIdDocumentLabel': studentIdDocumentLabel,
+        'ktpNumber': ktpNumber,
+        'ktpDocumentLabel': ktpDocumentLabel,
         'verificationSubmittedAt': verificationSubmittedAt?.toIso8601String(),
+        'avatarDataUrl': avatarDataUrl,
       };
 
   factory CaregiverAccount.fromJson(Map<String, Object?> json) => CaregiverAccount(
@@ -158,12 +162,16 @@ class CaregiverAccount {
         safetyModuleCompleted: json['safetyModuleCompleted'] as bool? ?? false,
         availability: CaregiverAvailability.values
             .byName(json['availability'] as String? ?? 'available'),
-        studentIdNumber: json['studentIdNumber'] as String?,
-        university: json['university'] as String?,
-        studentIdDocumentLabel: json['studentIdDocumentLabel'] as String?,
+        // The `studentId*` keys are the pre-KTP names, kept so saved demo data
+        // still loads after the switch to KTP verification.
+        ktpNumber: json['ktpNumber'] as String? ??
+            json['studentIdNumber'] as String?,
+        ktpDocumentLabel: json['ktpDocumentLabel'] as String? ??
+            json['studentIdDocumentLabel'] as String?,
         verificationSubmittedAt: json['verificationSubmittedAt'] == null
             ? null
             : DateTime.parse(json['verificationSubmittedAt']! as String),
+        avatarDataUrl: json['avatarDataUrl'] as String?,
       );
 }
 

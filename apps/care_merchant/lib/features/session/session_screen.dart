@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,35 +74,36 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Send an SOS?'),
+        title: const AppText('Send an SOS?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            const AppText(
               'This alerts the care seeker\'s emergency contacts and support. '
               'Only use it if you are in danger.',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             TextField(
               controller: controller,
               maxLines: 3,
               autofocus: true,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(hintText: 'What is happening?'),
+              decoration: InputDecoration(hintText: trText(context, 'What is happening?')),
             ),
           ],
         ),
         actions: [
-          TextButton(
+          AppButton(
+            label: 'Cancel',
+            variant: AppButtonVariant.ghost,
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).colorScheme.error,
-            ),
+          AppButton(
+            label: 'Send SOS',
+            variant: AppButtonVariant.danger,
+            expand: false,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Send SOS'),
           ),
         ],
       ),
@@ -137,15 +139,16 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: AppText(title),
+        content: AppText(message),
         actions: [
-          FilledButton(
+          AppButton(
+            label: 'Back home',
+            expand: false,
             onPressed: () {
               Navigator.of(dialogContext).pop();
               context.go(HomeShell.route);
             },
-            child: const Text('Back home'),
           ),
         ],
       ),
@@ -161,29 +164,13 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Session'),
+          title: const AppText('Session'),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 56,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                const Text('This session has ended.'),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () => context.go(HomeShell.route),
-                  child: const Text('Back home'),
-                ),
-              ],
-            ),
-          ),
+        body: EmptyState(
+          icon: Icons.check_circle_outline,
+          title: 'This session has ended.',
+          actionLabel: 'Back home',
+          onAction: () => context.go(HomeShell.route),
         ),
       );
     }
@@ -195,12 +182,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Session in progress'),
+        title: const AppText('Session in progress'),
         automaticallyImplyLeading: false,
         actions: [
           if (kDebugMode)
             IconButton(
-              tooltip: 'Demo controls',
+              tooltip: trText(context, 'Demo controls'),
               icon: const Icon(Icons.bug_report_outlined),
               onPressed: () => showDemoControls(context),
             ),
@@ -211,7 +198,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
           children: [
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.page,
                 children: [
                   _TimerCard(
                     elapsed: elapsed,
@@ -219,7 +206,7 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
                     overtime: overtime,
                     theme: theme,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.lg),
                   _workChecklist(theme, booking),
                 ],
               ),
@@ -236,75 +223,70 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
     if (tasks.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Work checklist', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              'Tick off each task as you go.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText('Work checklist', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          AppText(
+            'Tick off each task as you go.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 8),
-            ...tasks.map(
-              (task) => CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(task),
-                value: _checked.contains(task),
-                onChanged: (value) => setState(() {
-                  if (value == true) {
-                    _checked.add(task);
-                  } else {
-                    _checked.remove(task);
-                  }
-                }),
-              ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          ...tasks.map(
+            (task) => CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: AppText(task),
+              value: _checked.contains(task),
+              onChanged: (value) => setState(() {
+                if (value == true) {
+                  _checked.add(task);
+                } else {
+                  _checked.remove(task);
+                }
+              }),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _actions(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.pageGutter,
+        AppSpacing.sm,
+        AppSpacing.pageGutter,
+        AppSpacing.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FilledButton.icon(
+          AppButton(
+            label: 'Mark work complete',
+            icon: Icons.check_rounded,
+            loading: _busy,
             onPressed: _busy ? null : _markComplete,
-            icon: _busy
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check),
-            label: const Text('Mark work complete'),
           ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Report the care seeker',
+            icon: Icons.report_outlined,
+            variant: AppButtonVariant.secondary,
             onPressed: _busy
                 ? null
                 : () => context.push(ReportCareSeekerScreen.route),
-            icon: const Icon(Icons.report_outlined),
-            label: const Text('Report the care seeker'),
           ),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: theme.colorScheme.onError,
-            ),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'SOS',
+            icon: Icons.sos_outlined,
+            variant: AppButtonVariant.danger,
             onPressed: _busy ? null : _sos,
-            icon: const Icon(Icons.sos),
-            label: const Text('SOS'),
           ),
         ],
       ),
@@ -330,23 +312,23 @@ class _TimerCard extends StatelessWidget {
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: AppSpacing.page,
         child: Column(
           children: [
             Icon(
               Icons.timer_outlined,
               color: theme.colorScheme.onPrimaryContainer,
             ),
-            const SizedBox(height: 8),
-            Text(
+            const SizedBox(height: AppSpacing.sm),
+            AppText(
               formatTimer(elapsed),
               style: theme.textTheme.displaySmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
+            const SizedBox(height: AppSpacing.xs),
+            AppText(
               overtime
                   ? 'Overtime by ${formatTimer(-remaining)}'
                   : 'Time remaining: ${formatTimer(remaining)}',

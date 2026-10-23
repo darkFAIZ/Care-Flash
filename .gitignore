@@ -63,3 +63,6 @@ app.*.map.json
 **/ios/Flutter/app.flx
 **/ios/Flutter/ephemeral/
 **/ios/**/DerivedData/
+
+# Demo backend data (accounts + session tokens)
+data/backend.json

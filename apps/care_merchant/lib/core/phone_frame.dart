@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:care_ui/care_ui.dart';
 
 /// Frames the app as a phone on wide windows (web/desktop) so the mobile
 /// layout and its aspect ratio are preserved for the two-window demo, and
@@ -31,7 +32,7 @@ class PhoneFrame extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          AppText(
             label,
             style: const TextStyle(
               color: Colors.white70,

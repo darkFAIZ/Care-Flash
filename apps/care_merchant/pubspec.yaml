@@ -41,12 +41,21 @@ dependencies:
   care_core:
     path: ../../packages/care_core
 
+  # Shared design tokens, themes and widgets. (AGENTS.md §5)
+  care_ui:
+    path: ../../packages/care_ui
+  google_fonts: ^9.0.0
+  flutter_animate: ^4.5.2
+
   # State management and routing, matching Care-Flash. (AGENTS.md §5)
   flutter_riverpod: 3.4.3
   go_router: 18.1.0
 
   # Small local preferences (login, current booking). (AGENTS.md §5)
   shared_preferences: ^2.3.0
+  image_picker: ^1.2.4
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

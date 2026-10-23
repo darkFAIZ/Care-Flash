@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,11 +60,11 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
+      appBar: AppBar(title: const AppText('Create account')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.page,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -71,18 +72,16 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
+                    AppText(
                       'Tell us who you are.',
                       style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 24),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
                       controller: _name,
+                      label: 'Full name',
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Full name',
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
+                      prefixIcon: Icons.person_outline,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter your name';
@@ -90,14 +89,12 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
                       controller: _email,
+                      label: 'Email',
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
-                      ),
+                      prefixIcon: Icons.mail_outline,
                       validator: (value) {
                         if (value == null || !value.contains('@')) {
                           return 'Enter a valid email address';
@@ -105,41 +102,35 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                    TextFormField(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppTextField(
                       controller: _password,
+                      label: 'Password',
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        helperText: 'At least 6 characters',
-                      ),
+                      helperText: 'At least 6 characters',
+                      prefixIcon: Icons.lock_outline,
                       validator: (value) {
                         if (value == null || value.length < 6) {
                           return 'Password must be at least 6 characters';
                         }
                         return null;
                       },
-                      onFieldSubmitted: (_) => _submit(),
+                      onSubmitted: (_) => _submit(),
                     ),
                     if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(
+                      const SizedBox(height: AppSpacing.lg),
+                      AppText(
                         _error!,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: theme.colorScheme.error),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppSemanticColors.of(context).danger,
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    FilledButton(
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(
+                      label: 'Create account',
+                      loading: _busy,
                       onPressed: _busy ? null : _submit,
-                      child: _busy
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Create account'),
                     ),
                   ],
                 ),

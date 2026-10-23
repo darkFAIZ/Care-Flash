@@ -16,9 +16,8 @@ void main() {
     final id = (auth['user'] as Map<String, Object?>)['id']! as String;
     state.submitVerification(
       id,
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
+      ktpNumber: '3174012501990001',
+      documentLabel: 'KTP',
     );
     state.completeSafetyModule(id);
     state.updateAvailability(id, CaregiverAvailability.available);
@@ -76,8 +75,15 @@ void main() {
     expect(codeResult['success'], true);
 
     // 4. The seeker verifies the physical safety button, starting the session.
-    final safetyButtonId = (state.seekerSnapshot(seekerId)['activeBooking']
-        as Map<String, Object?>)['safetyButtonId']! as String;
+    // The payload is read from the booking's button code, which is what the
+    // care seeker's device would scan. (FR-P-17, FR-P-18)
+    final buttonCode = (state.seekerSnapshot(seekerId)['activeBooking']
+        as Map<String, Object?>)['buttonCode'] as Map<String, Object?>?;
+    expect(buttonCode, isNotNull,
+        reason: 'verifying the client code activates the button code');
+    // The payload is derived from the stored booking id and nonce.
+    final safetyButtonId =
+        'careflash://button/${buttonCode!['bookingId']}/${buttonCode['nonce']}';
     final buttonResult = state.verifySafetyButton(
       seekerId,
       ButtonVerification(
@@ -85,6 +91,19 @@ void main() {
     );
     expect(buttonResult['success'], true);
     expect(clientCode, isNull); // the local var was captured before payment
+
+    // The code is single use: the scan is stamped as used so a replayed
+    // payload is rejected. (FR-P-18)
+    final usedCode = (state.seekerSnapshot(seekerId)['activeBooking']
+        as Map<String, Object?>)['buttonCode'] as Map<String, Object?>?;
+    expect(usedCode?['usedAt'], isNotNull);
+    final replay = state.verifySafetyButton(
+      seekerId,
+      ButtonVerification(
+          method: ButtonVerificationMethod.qr, payload: safetyButtonId),
+    );
+    expect(replay['success'], isFalse,
+        reason: 'the same payload cannot verify the button twice');
 
     // 5. The caregiver completes; earnings are credited.
     state.completeSession(caregiverId);
@@ -154,13 +173,12 @@ void main() {
     );
     expect(fresh.verificationStatus, VerificationStatus.notSubmitted);
 
-    // Submitting the student ID is auto-approved by the demo backend, so the
+    // Submitting the KTP is auto-approved by the demo backend, so the
     // caregiver is never left stuck "under review".
     state.submitVerification(
       caregiverId,
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
+      ktpNumber: '3174012501990001',
+      documentLabel: 'KTP',
     );
     final after = CaregiverAccount.fromJson(
       state.caregiverSnapshot(caregiverId)['currentCaregiver']! as Map<String, Object?>,

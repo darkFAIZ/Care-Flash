@@ -1,6 +1,7 @@
 import 'package:care_backend/care_backend.dart';
 import 'package:care_core/care_core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Lets the event loop settle so a WebSocket snapshot can be delivered and
 /// applied to the remote platform's cached state.
@@ -42,6 +43,7 @@ void main() {
   List<FeedbackReceived> feedback = const [];
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     server = CareBackendServer(port: 0);
     await server.start();
     final url = 'ws://localhost:${server.boundPort}';
@@ -89,9 +91,8 @@ void main() {
     final caregiverId = caregiverAuth.user!.id;
 
     await caregiver.submitVerification(
-      studentIdNumber: '220001',
-      university: 'UI',
-      documentLabel: 'KTM',
+      ktpNumber: '3174012501990001',
+      documentLabel: 'KTP',
     );
     await caregiver.completeSafetyModule();
     await caregiver.updateAvailability(CaregiverAvailability.available);

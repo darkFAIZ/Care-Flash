@@ -14,11 +14,18 @@ class PriceBreakdown {
   /// Platform service fee, 5 percent of [caregiverPrice]. (FR-P-10)
   final int platformFee;
 
-  /// Estimated Grab fare, mocked for now. (AGENTS.md §5)
+  /// Estimated Grab fare, mocked for now. The care seeker pays this as part of
+  /// the total; the caregiver never pays for the ride. (FR-P-10, FR-P-11)
   final int grabFare;
 
-  /// Caregiver price + platform fee + Grab fare. (FR-P-11)
+  /// Caregiver price + platform fee + Grab fare. This is the full amount the
+  /// care seeker pays at payment time, before any caregiver accepts. (FR-P-11)
   int get total => caregiverPrice + platformFee + grabFare;
+
+  /// The caregiver's share only: the service price. The platform keeps
+  /// [platformFee] and passes [grabFare] through to Grab, so neither is
+  /// earnings. (FR-P-21)
+  int get caregiverPay => caregiverPrice;
 
   Map<String, Object?> toJson() => {
         'caregiverPrice': caregiverPrice,

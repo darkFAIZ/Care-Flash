@@ -1,6 +1,7 @@
 import 'package:care_core/care_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'core/providers.dart';
@@ -16,6 +17,10 @@ const String _backendUrl = String.fromEnvironment('BACKEND_URL');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Plus Jakarta Sans ships with the app (packages/care_ui assets), so no
+  // screen ever waits on a font download during the demo.
+  GoogleFonts.config.allowRuntimeFetching = false;
+  await loadPreferences();
   final CaregiverPlatform platform;
   if (_backendUrl.isEmpty) {
     platform = await MockCaregiverPlatform.create();

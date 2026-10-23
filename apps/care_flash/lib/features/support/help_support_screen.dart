@@ -1,3 +1,4 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Help and support page with a scripted support chat.
@@ -97,13 +98,13 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Help and support')),
+      appBar: AppBar(title: const AppText('Help and support')),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scroll,
-              padding: const EdgeInsets.all(16),
+              padding: AppSpacing.page,
               itemCount: _messages.length,
               itemBuilder: (context, index) =>
                   _ChatBubble(message: _messages[index]),
@@ -114,11 +115,11 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
               height: 48,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.pageGutter),
                 itemCount: _topics.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
                 itemBuilder: (context, index) => ActionChip(
-                  label: Text(_topics[index]),
+                  label: AppText(_topics[index]),
                   onPressed: () => _send(_topics[index]),
                 ),
               ),
@@ -126,7 +127,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.pageGutter, AppSpacing.sm, AppSpacing.pageGutter, AppSpacing.md),
               child: Row(
                 children: [
                   Expanded(
@@ -134,16 +135,16 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       controller: _input,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message',
+                      decoration: InputDecoration(
+                        hintText: trText(context, 'Type a message'),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
                     onPressed: () => _send(),
-                    icon: const Icon(Icons.send),
-                    tooltip: 'Send',
+                    icon: const Icon(Icons.send_rounded),
+                    tooltip: trText(context, 'Send'),
                   ),
                 ],
               ),
@@ -182,14 +183,14 @@ class _ChatBubble extends StatelessWidget {
     return Align(
       alignment: alignment,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         constraints: const BoxConstraints(maxWidth: 320),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
-        child: Text(message.text, style: theme.textTheme.bodyMedium?.copyWith(color: textColor)),
+        child: AppText(message.text, style: theme.textTheme.bodyMedium?.copyWith(color: textColor)),
       ),
     );
   }

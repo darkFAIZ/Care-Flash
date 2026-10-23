@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,7 +36,12 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
     final platform = ref.read(platformProvider);
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.pageGutter,
+          0,
+          AppSpacing.pageGutter,
+          AppSpacing.lg,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -43,24 +49,24 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
               children: [
                 Icon(Icons.bug_report_outlined,
                     color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Demo controls', style: theme.textTheme.titleLarge),
+                const SizedBox(width: AppSpacing.sm),
+                AppText('Demo controls', style: theme.textTheme.titleLarge),
                 const Spacer(),
-                Text('Debug only', style: theme.textTheme.labelSmall),
+                AppText('Debug only', style: theme.textTheme.labelSmall),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
+            const SizedBox(height: AppSpacing.sm),
+            AppText(
               'Drive the mock platform by hand while showing the app.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const Divider(height: 24),
+            const Divider(height: AppSpacing.xl),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Auto-advance'),
-              subtitle: const Text('The mock moves through steps on its own'),
+              title: const AppText('Auto-advance'),
+              subtitle: const AppText('The mock moves through steps on its own'),
               value: _autoAdvance,
               onChanged: (value) {
                 setState(() => _autoAdvance = value);
@@ -69,20 +75,20 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Next review rejects the ID'),
-              subtitle: const Text('Turn on to show the rejection and resubmit path'),
+              title: const AppText('Next review rejects the ID'),
+              subtitle: const AppText('Turn on to show the rejection and resubmit path'),
               value: _nextVerificationFails,
               onChanged: (value) {
                 setState(() => _nextVerificationFails = value);
                 platform.setNextVerificationFails(value);
               },
             ),
-            const Divider(height: 24),
-            Text('Simulate the care seeker', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const Divider(height: AppSpacing.xl),
+            AppText('Simulate the care seeker', style: theme.textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
               children: [
                 _action('Send a request', platform.simulateIncomingRequest),
                 _action('Cancel booking', platform.simulateCareSeekerCancel),
@@ -93,15 +99,15 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
                   ),
                 ),
                 _action(
-                  'Scan the button',
+                  'Care seeker scans the button',
                   () => platform.simulateCareSeekerButtonScan(),
                 ),
                 _action('End early', platform.simulateCareSeekerEndEarly),
               ],
             ),
             if (platform.debugClientCode != null) ...[
-              const SizedBox(height: 12),
-              Text(
+              const SizedBox(height: AppSpacing.md),
+              AppText(
                 'The care seeker is showing client code '
                 '${platform.debugClientCode}.',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -115,6 +121,10 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
     );
   }
 
-  Widget _action(String label, VoidCallback onTap) =>
-      FilledButton.tonal(onPressed: onTap, child: Text(label));
+  Widget _action(String label, VoidCallback onTap) => AppButton(
+        label: label,
+        variant: AppButtonVariant.secondary,
+        expand: false,
+        onPressed: onTap,
+      );
 }

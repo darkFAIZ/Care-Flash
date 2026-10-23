@@ -32,11 +32,23 @@ class _Conn {
 /// app, so a booking created in Care-Flash shows up live in Care-Merchant and
 /// vice versa. (AGENTS.md §5)
 class CareBackendServer {
-  CareBackendServer({this.port = 8080, CareBackendState? state})
-      : state = state ?? CareBackendState();
+  CareBackendServer({
+    this.port = 8080,
+    this.host = '127.0.0.1',
+    CareBackendState? state,
+    this.onStateChanged,
+  }) : state = state ?? CareBackendState();
 
   final int port;
+
+  /// Interface to listen on. Use `0.0.0.0` when a phone on the same Wi-Fi
+  /// needs to reach the backend. The default stays local-only.
+  final String host;
+
   final CareBackendState state;
+
+  /// Called after every operation so the entry point can save accounts to disk.
+  final void Function(CareBackendState state)? onStateChanged;
 
   HttpServer? _server;
   final Map<WebSocket, _Conn> _conns = {};
@@ -46,11 +58,17 @@ class CareBackendServer {
   int? get boundPort => _server?.port;
 
   Future<void> start() async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+    final address = _bindAddress();
+    final server = await HttpServer.bind(address, port);
     _server = server;
     // ignore: avoid_print
-    print('Care-Flash backend listening on ws://localhost:${server.port}');
+    print('Care-Flash backend listening on ws://${server.address.host}:${server.port}');
     server.listen(_onRequest, onError: (_) {});
+  }
+
+  InternetAddress _bindAddress() {
+    if (host == 'localhost') return InternetAddress.loopbackIPv4;
+    return InternetAddress.tryParse(host) ?? InternetAddress.loopbackIPv4;
   }
 
   Future<void> _onRequest(HttpRequest request) async {
@@ -104,6 +122,7 @@ class CareBackendServer {
     } catch (e) {
       conn.send({'res': req, 'ok': false, 'err': _cleanError(e)});
     }
+    onStateChanged?.call(state);
     _broadcast();
   }
 
@@ -147,6 +166,16 @@ class CareBackendServer {
         );
         _bind(conn, r);
         return r;
+      case 'authToken':
+        final r = state.resumeSession(args['token']! as String);
+        if (r == null) return {'resume': false};
+        _bindSession(conn, r);
+        return {'resume': true, 'role': r['role'], 'user': r['user']};
+      case 'signOut':
+        state.signOut(args['token']! as String);
+        conn.role = null;
+        conn.userId = null;
+        return null;
 
       // ----- care seeker lifecycle -----
       case 'submitRequest':
@@ -185,13 +214,19 @@ class CareBackendServer {
       case 'submitAppFeedback':
         state.submitAppFeedback(args);
         return null;
+      case 'updateSeekerProfile':
+        state.updateSeekerProfile(_seeker(conn), name: args['name']! as String);
+        return null;
+      case 'updateSeekerAvatar':
+        state.updateSeekerAvatar(_seeker(conn),
+            avatarDataUrl: args['avatarDataUrl'] as String?);
+        return null;
 
       // ----- caregiver onboarding -----
       case 'submitVerification':
         state.submitVerification(
           _caregiver(conn),
-          studentIdNumber: args['studentIdNumber']! as String,
-          university: args['university']! as String,
+          ktpNumber: args['ktpNumber']! as String,
           documentLabel: args['documentLabel']! as String,
         );
         return null;
@@ -204,6 +239,13 @@ class CareBackendServer {
       case 'updateAvailability':
         state.updateAvailability(
             _caregiver(conn), CaregiverAvailability.values.byName(args['availability']! as String));
+        return null;
+      case 'updateCaregiverProfile':
+        state.updateCaregiverProfile(_caregiver(conn), name: args['name']! as String);
+        return null;
+      case 'updateCaregiverAvatar':
+        state.updateCaregiverAvatar(_caregiver(conn),
+            avatarDataUrl: args['avatarDataUrl'] as String?);
         return null;
 
       // ----- caregiver request + session lifecycle -----
@@ -251,6 +293,12 @@ class CareBackendServer {
     if (user == null) return;
     final isCaregiver = user.containsKey('verificationStatus');
     conn.role = isCaregiver ? 'caregiver' : 'seeker';
+    conn.userId = user['id']! as String;
+  }
+
+  void _bindSession(_Conn conn, Map<String, Object?> session) {
+    final user = session['user']! as Map<String, Object?>;
+    conn.role = session['role']! as String;
     conn.userId = user['id']! as String;
   }
 

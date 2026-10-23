@@ -1,4 +1,5 @@
 import 'package:care_core/care_core.dart';
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,7 +27,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final status = caregiver.verificationStatus;
     final (icon, color) = switch (status) {
-      VerificationStatus.pending => (Icons.hourglass_top, theme.colorScheme.primary),
+      VerificationStatus.pending => (Icons.hourglass_top_rounded, theme.colorScheme.primary),
       VerificationStatus.approved => (Icons.verified_outlined, theme.colorScheme.primary),
       VerificationStatus.rejected => (Icons.error_outline, theme.colorScheme.error),
       VerificationStatus.notSubmitted => (Icons.info_outline, theme.colorScheme.onSurfaceVariant),
@@ -34,7 +35,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final message = switch (status) {
       VerificationStatus.pending =>
-        'Your student ID is being reviewed. This usually takes a short while. '
+        'Your KTP is being reviewed. This usually takes a short while. '
             'You will be able to receive requests once you are verified.',
       VerificationStatus.approved =>
         'You are verified. You can now complete the safety module and start '
@@ -42,72 +43,71 @@ class VerificationStatusScreen extends ConsumerWidget {
       VerificationStatus.rejected =>
         caregiver.rejectionReason ?? 'Your submission was not accepted.',
       VerificationStatus.notSubmitted =>
-        'You have not submitted your student ID yet.',
+        'You have not submitted your KTP yet.',
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Verification status')),
+      appBar: AppBar(title: const AppText('Verification status')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: AppSpacing.page,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Icon(icon, size: 64, color: color),
-                  const SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: AppSpacing.lg),
+                  AppText(
                     status.label,
                     style: theme.textTheme.headlineSmall,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
+                  const SizedBox(height: AppSpacing.md),
+                  AppText(
                     message,
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: status == VerificationStatus.rejected
-                          ? theme.colorScheme.error
+                          ? AppSemanticColors.of(context).danger
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (caregiver.university != null) ...[
-                    const SizedBox(height: 24),
-                    Card(
+                  if (caregiver.ktpNumber != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    AppCard(
+                      padding: EdgeInsets.zero,
                       child: ListTile(
-                        leading: const Icon(Icons.school_outlined),
-                        title: Text(caregiver.university!),
-                        subtitle: caregiver.studentIdNumber == null
-                            ? null
-                            : Text('Student ID ${caregiver.studentIdNumber}'),
+                        leading: const Icon(Icons.badge_outlined),
+                        title: AppText('KTP ${_maskedKtp(caregiver.ktpNumber!)}'),
+                        subtitle: const AppText(
+                          'Only the platform can see your full KTP number.',
+                        ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
                   if (status == VerificationStatus.approved) ...[
-                    FilledButton(
+                    AppButton(
+                      label: caregiver.safetyModuleCompleted
+                          ? 'Continue to requests'
+                          : 'Continue to the safety module',
                       onPressed: caregiver.safetyModuleCompleted
                           ? () => context.go(HomeShell.route)
                           : () => context.go(SafetyModuleScreen.route),
-                      child: Text(
-                        caregiver.safetyModuleCompleted
-                            ? 'Continue to requests'
-                            : 'Continue to the safety module',
-                      ),
                     ),
                   ] else if (status == VerificationStatus.rejected ||
                       status == VerificationStatus.notSubmitted) ...[
-                    FilledButton(
+                    AppButton(
+                      label: 'Resubmit your KTP',
                       onPressed: () => context.go(OnboardingScreen.route),
-                      child: const Text('Resubmit your student ID'),
                     ),
                   ] else if (status == VerificationStatus.pending) ...[
                     // The review completes on its own; watch the caregiver so
                     // this screen updates when it is approved.
-                    const SizedBox(height: 8),
-                    Text(
+                    const SizedBox(height: AppSpacing.sm),
+                    AppText(
                       'Waiting for review…',
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
@@ -121,4 +121,13 @@ class VerificationStatusScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Shows only the last four digits, e.g. `•••• •••• •••• 1234`.
+String _maskedKtp(String ktp) {
+  final digits = ktp.trim();
+  if (digits.length <= 4) {
+    return digits;
+  }
+  return '•••• •••• •••• ${digits.substring(digits.length - 4)}';
 }

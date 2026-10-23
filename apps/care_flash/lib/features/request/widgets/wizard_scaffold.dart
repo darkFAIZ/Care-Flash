@@ -1,6 +1,7 @@
+import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 
-/// Shared scaffold for the request-flow steps: a progress bar, the step body
+/// Shared scaffold for the request-flow steps: a step indicator, the step body
 /// and a single primary action pinned to the bottom. (AGENTS.md §8)
 class WizardScaffold extends StatelessWidget {
   const WizardScaffold({
@@ -15,6 +16,13 @@ class WizardScaffold extends StatelessWidget {
     this.footer,
   });
 
+  static const List<String> defaultStepLabels = <String>[
+    'Need',
+    'Boundaries',
+    'Schedule',
+    'Preference',
+  ];
+
   final String title;
   final int step;
   final int totalSteps;
@@ -28,54 +36,46 @@ class WizardScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final labels = totalSteps == defaultStepLabels.length
+        ? defaultStepLabels
+        : List<String>.generate(totalSteps, (i) => '${i + 1}');
+
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: AppText(title)),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Step $step of $totalSteps',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: step / totalSteps,
-                    minHeight: 6,
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageGutter,
+              AppSpacing.lg,
+              AppSpacing.pageGutter,
+              0,
             ),
+            child: StepIndicator(steps: labels, current: step - 1),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: child,
-            ),
+            child: SingleChildScrollView(padding: AppSpacing.page, child: child),
           ),
         ],
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.pageGutter,
+            AppSpacing.sm,
+            AppSpacing.pageGutter,
+            AppSpacing.lg,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (footer != null) ...[footer!, const SizedBox(height: 12)],
-              FilledButton(
+              if (footer != null) ...[footer!, const SizedBox(height: AppSpacing.md)],
+              AppButton(
+                label: primaryLabel,
                 onPressed: primaryEnabled ? onPrimary : null,
-                child: Text(primaryLabel),
               ),
             ],
           ),
