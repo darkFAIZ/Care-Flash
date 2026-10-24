@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../core/appearance.dart';
 
 Future<void> showMerchantPreferences(BuildContext context) =>
     showModalBottomSheet<void>(
@@ -17,7 +18,8 @@ class _PreferencesSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final language = ref.watch(languageProvider);
-    final mode = ref.watch(themeModeProvider);
+    final appearance = ref.watch(appearanceProvider);
+    final mode = appearance.mode;
     final id = language == AppLanguage.bahasaIndonesia;
     return SafeArea(
       child: Column(
@@ -62,7 +64,7 @@ class _PreferencesSheet extends ConsumerWidget {
               title: Text(_modeName(item, id)),
               onChanged: (value) {
                 if (value != null)
-                  ref.read(themeModeProvider.notifier).select(value);
+                  ref.read(appearanceProvider.notifier).setMode(value);
               },
             ),
           const SizedBox(height: 12),
