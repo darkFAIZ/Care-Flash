@@ -745,6 +745,12 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   }
 
   @override
+  void simulateCareSeekerCodeConfirmation({bool valid = true}) {
+    final code = valid ? _activeBooking?.clientCode : '000000';
+    if (code != null) unawaited(verifyClientCode(code));
+  }
+
+  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,

@@ -176,6 +176,36 @@ class MockCarePlatform implements CareSeekerPlatform {
   }
 
   @override
+  Future<ButtonVerificationResult> verifyCaregiverCode(String code) async {
+    final booking = _activeBooking;
+    if (booking == null || booking.status != BookingStatus.arrived) {
+      return const ButtonVerificationResult.failed(
+        'This booking is not ready for code confirmation yet.',
+      );
+    }
+    await _smallDelay();
+    if (booking.clientCode == null || code.trim() != booking.clientCode) {
+      await cancelBooking(CancellationReason.failedVerification);
+      return const ButtonVerificationResult.failed(
+        'The caregiver code did not match. The booking was cancelled.',
+      );
+    }
+    final verified = booking
+        .copyWith(
+          status: BookingStatus.codeVerified,
+          buttonCode: ButtonCode.generate(bookingId: booking.id),
+        )
+        .withUpdate(BookingUpdate(
+          status: BookingStatus.codeVerified,
+          message: 'Caregiver code confirmed. Please scan the safety button.',
+          at: DateTime.now(),
+        ));
+    await _setActiveBooking(verified);
+    if (_autoAdvance) simulateButtonScan();
+    return const ButtonVerificationResult.success();
+  }
+
+  @override
   Stream<List<Booking>> watchBookingHistory() async* {
     yield List<Booking>.unmodifiable(_history);
     yield* _historyController.stream;

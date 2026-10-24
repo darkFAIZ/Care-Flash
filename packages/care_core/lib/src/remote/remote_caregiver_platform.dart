@@ -314,6 +314,9 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
   void simulateCareSeekerCancel() {}
 
   @override
+  void simulateCareSeekerCodeConfirmation({bool valid = true}) {}
+
+  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,

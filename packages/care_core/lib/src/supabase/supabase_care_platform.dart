@@ -146,14 +146,20 @@ class SupabaseCaregiverPlatform implements CaregiverPlatform {
   @override
   Future<void> declineRequest() => _store.action('decline');
   @override
-  Future<ButtonVerificationResult> verifyClientCode(String code) async =>
-      ButtonVerificationResult.failed('The care seeker confirms the caregiver code in Care-Flash.');
-  @override
   Future<void> reportDanger(String description) => _store.action('report', {'description': description});
   @override
   Future<void> startTrip() => _store.action('startTrip');
   @override
   Future<void> markArrived() => _store.action('arrive');
+  @override
+  Future<ButtonVerificationResult> verifyClientCode(String code) async {
+    final result = await _store.actionResult('verifyClientCode', {'code': code});
+    return result['success'] == true
+        ? const ButtonVerificationResult.success()
+        : ButtonVerificationResult.failed(
+            result['message'] as String? ?? 'That code is incorrect.',
+          );
+  }
   @override
   Future<void> completeSession() => _store.action('complete');
   @override

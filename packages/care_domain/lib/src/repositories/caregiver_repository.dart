@@ -147,6 +147,9 @@ abstract interface class CaregiverDemoControls {
   /// caregiver. (FR-CM-12)
   void simulateCareSeekerCancel();
 
+  /// Simulates the seeker confirming the caregiver's arrival code in Care-Flash.
+  void simulateCareSeekerCodeConfirmation({bool valid = true});
+
   /// Simulates the care seeker scanning or reading the safety button the
   /// caregiver handed over. The prototype has no camera or NFC reader.
   /// (FR-CM-15, FR-CM-16)
