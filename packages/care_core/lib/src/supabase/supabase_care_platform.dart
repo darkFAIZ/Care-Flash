@@ -96,7 +96,19 @@ class SupabaseCareSeekerPlatform implements CareSeekerPlatform {
   @override
   void simulateCaregiverCodeVerification({bool valid = true}) {}
   @override
-  void simulateButtonScan({ButtonVerificationMethod method = ButtonVerificationMethod.qr, bool valid = true}) {}
+  void simulateButtonScan({ButtonVerificationMethod method = ButtonVerificationMethod.qr, bool valid = true}) {
+    if (valid) {
+      unawaited(_store.simulateButtonScanResult());
+    } else {
+      unawaited(verifySafetyButton(
+        ButtonVerification(method: method, payload: 'INVALID-DEMO-SCAN'),
+      ));
+    }
+  }
+  @override
+  Future<ButtonVerificationResult> simulateButtonScanResult({
+    ButtonVerificationMethod method = ButtonVerificationMethod.qr,
+  }) => _store.simulateButtonScanResult();
   @override
   void simulateButtonPress() {}
   @override
@@ -391,7 +403,24 @@ class _CareStore {
         ? const VisitLocation(label: 'Shared after acceptance', address: 'Address shown after accepting', latitude: 0, longitude: 0).toJson()
         : Map<String, Object?>.from(loc);
     data['clientCode'] = secretRows?['client_code'];
-    data['safetyButtonId'] = secretRows?['safety_button_id'];
+    final status = row['status'] as String;
+    String? safetyButtonId;
+    if (const {'codeVerified', 'buttonVerified', 'active'}.contains(status)) {
+      safetyButtonId = secretRows?['safety_button_id'] as String?;
+    }
+    if (caregiver != null &&
+        const {'codeVerified', 'buttonVerified', 'active'}.contains(status)) {
+      try {
+        safetyButtonId = await client.rpc(
+          'caregiver_safety_button_token',
+          params: {'p_booking_id': row['id']},
+        ) as String? ?? safetyButtonId;
+      } catch (_) {
+        // Keep the RLS-protected table read as a fallback while this RPC
+        // migration is being applied to the Supabase project.
+      }
+    }
+    data['safetyButtonId'] = safetyButtonId;
     data['status'] = row['status'];
     return Booking.fromJson(data);
   }
@@ -485,6 +514,28 @@ class _CareStore {
     await refresh();
     return Map<String, Object?>.from(result as Map);
   }
+
+  Future<ButtonVerificationResult> simulateButtonScanResult() async {
+    final booking = activeSeekerBooking;
+    if (booking == null) {
+      return const ButtonVerificationResult.failed('No active booking.');
+    }
+    try {
+      final result = await client.rpc(
+        'simulate_safety_button_scan',
+        params: {'p_booking_id': booking.id},
+      );
+      await refresh();
+      final response = Map<String, Object?>.from(result as Map);
+      return response['success'] == true
+          ? const ButtonVerificationResult.success()
+          : ButtonVerificationResult.failed(
+              response['message'] as String? ?? 'The scan simulation failed.',
+            );
+    } catch (error) {
+      return ButtonVerificationResult.failed(_message(error));
+    }
+  }
   Future<void> action(String action, [Map<String, Object?> data = const {}]) async { await actionResult(action, data); }
   Future<void> updateGender(Gender gender) async { await client.from('caregiver_profiles').update({'gender': gender.name}).eq('user_id', client.auth.currentUser!.id); await refresh(); }
   Future<void> updateAvailability(CaregiverAvailability value) async { await client.from('caregiver_profiles').update({'availability': value.name}).eq('user_id', client.auth.currentUser!.id); await refresh(); }
@@ -498,5 +549,18 @@ class _CareStore {
   }
   Future<void> saveRating(String table, Map<String, Object?> value) async { await client.rpc('save_care_rating', params: {'p_rating': value, 'p_kind': table}); await refresh(); }
   Future<void> saveFeedback(Map<String, Object?> value) async { await client.rpc('save_app_feedback', params: {'p_feedback': value}); }
-  String _message(Object error) => error is AuthException ? error.message : error.toString();
+  String _message(Object error) {
+    final message = error is AuthException ? error.message : error.toString();
+    final normalized = message.toLowerCase();
+    if ((normalized.contains('simulate_safety_button_scan') ||
+            normalized.contains('caregiver_safety_button_token')) &&
+        (normalized.contains('function') ||
+            normalized.contains('schema cache'))) {
+      return 'Apply 20261024153000_safety_button_demo_and_token.sql in the Supabase SQL Editor, then restart both apps.';
+    }
+    if (normalized.contains('rate') && normalized.contains('email')) {
+      return 'Supabase temporarily limited signup emails for this project. Both apps share this email quota. Wait before retrying, or configure custom SMTP in Supabase Authentication settings.';
+    }
+    return message;
+  }
 }

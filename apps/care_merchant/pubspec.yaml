@@ -57,6 +57,9 @@ dependencies:
   image_picker: ^1.2.4
   flutter_localizations:
     sdk: flutter
+  qr_flutter: ^4.1.0
+  nfc_manager: ^4.2.1
+  nfc_manager_ndef: ^1.1.0
 
 dev_dependencies:
   flutter_test:

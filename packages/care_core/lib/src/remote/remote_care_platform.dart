@@ -15,8 +15,9 @@ import 'backend_client.dart';
 class RemoteCarePlatform implements CareSeekerPlatform {
   RemoteCarePlatform(this._client) {
     _subscription = _client.snapshots.listen(_applySnapshot);
-    _reconnectSubscription =
-        _client.reconnected.listen((_) => _restoreSession());
+    _reconnectSubscription = _client.reconnected.listen(
+      (_) => _restoreSession(),
+    );
   }
 
   final CareBackendClient _client;
@@ -288,6 +289,22 @@ class RemoteCarePlatform implements CareSeekerPlatform {
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
   }) {}
+
+  @override
+  Future<ButtonVerificationResult> simulateButtonScanResult({
+    ButtonVerificationMethod method = ButtonVerificationMethod.qr,
+  }) async {
+    final booking = activeBooking;
+    final payload = booking?.safetyButtonId;
+    if (payload == null) {
+      return const ButtonVerificationResult.failed(
+        'The backend does not provide a safety token for simulation.',
+      );
+    }
+    return verifySafetyButton(
+      ButtonVerification(method: method, payload: payload),
+    );
+  }
 
   @override
   void simulateButtonPress() {}

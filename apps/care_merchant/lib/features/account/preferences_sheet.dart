@@ -40,16 +40,24 @@ class _PreferencesSheet extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          for (final item in AppLanguage.values)
-            RadioListTile<AppLanguage>(
-              value: item,
-              groupValue: language,
-              title: Text(item.label),
-              onChanged: (value) {
-                if (value != null)
-                  ref.read(languageProvider.notifier).select(value);
-              },
+          RadioGroup<AppLanguage>(
+            groupValue: language,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(languageProvider.notifier).select(value);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final item in AppLanguage.values)
+                  RadioListTile<AppLanguage>(
+                    value: item,
+                    title: Text(item.label),
+                  ),
+              ],
             ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Text(
@@ -57,16 +65,24 @@ class _PreferencesSheet extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          for (final item in ThemeMode.values)
-            RadioListTile<ThemeMode>(
-              value: item,
-              groupValue: mode,
-              title: Text(_modeName(item, id)),
-              onChanged: (value) {
-                if (value != null)
-                  ref.read(appearanceProvider.notifier).setMode(value);
-              },
+          RadioGroup<ThemeMode>(
+            groupValue: mode,
+            onChanged: (value) {
+              if (value != null) {
+                ref.read(appearanceProvider.notifier).setMode(value);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final item in ThemeMode.values)
+                  RadioListTile<ThemeMode>(
+                    value: item,
+                    title: Text(_modeName(item, id)),
+                  ),
+              ],
             ),
+          ),
           const SizedBox(height: 12),
         ],
       ),

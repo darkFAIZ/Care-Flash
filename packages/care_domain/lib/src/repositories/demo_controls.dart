@@ -1,4 +1,5 @@
 import '../enums.dart';
+import '../models/safety.dart';
 
 /// Debug-only hooks used by the Demo Controls sheet in each app (AGENTS.md §5).
 ///
@@ -40,6 +41,13 @@ abstract interface class DemoControls {
   void simulateButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
+  });
+
+  /// Completes the correct-scan demo without a camera or NFC tag.
+  /// The connected backend advances the booking server-side and does not
+  /// disclose the safety token to the care seeker.
+  Future<ButtonVerificationResult> simulateButtonScanResult({
+    ButtonVerificationMethod method = ButtonVerificationMethod.qr,
   });
 
   /// Simulates a press of the physical safety button, which reports the

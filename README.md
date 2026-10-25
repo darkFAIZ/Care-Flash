@@ -80,13 +80,28 @@ Installed phones can connect from different networks; no local computer address 
 Supabase Auth site's URL configuration to include the app's redirect URL when email confirmation
 is enabled. Create one seeker and one caregiver account.
 
+### Supabase signup email limits
+
+Both apps use the same Supabase Auth project, so signup and verification emails share its project
+email quota. Supabase Auth enforces this limit; resetting either app does not reset it, and there is
+no app-side rate-limit feature to remove. The built-in email sender is limited to 2 emails per hour.
+To raise the email quota, configure a custom SMTP provider or an Auth Send Email hook. In the
+Supabase Dashboard, check **Authentication → Rate Limits** and **Authentication → SMTP Settings**.
+Disabling **Confirm Email** in the Email provider stops signup confirmation emails and permits
+immediate sign-in, but Supabase then does not verify the email address. The apps now explain this
+limit when signup is rejected.
+
 ### Supabase database foundation
 
 The app uses `profiles`, `caregiver_profiles`, `bookings`, protected booking details/secrets, and
 rating/feedback tables. Request creation and lifecycle changes go through database RPC functions;
-booking updates are broadcast over Realtime. The local migration files under `supabase/migrations/`
-have also been applied to the connected project. Never put a Supabase secret/service-role key in an
-app build.
+booking updates are broadcast over Realtime. Apply new migrations from `supabase/migrations/` to the
+connected project before expecting newly added RPC features to work. For the newest safety-button
+token lookup and laptop scan simulation, execute
+`20261024153000_safety_button_demo_and_token.sql` in the Supabase SQL Editor. The linked project has
+remote migration-history entries with no matching local files, so `supabase db push` currently stops
+before applying migrations; reconcile those histories before using `db push` again. Never put a
+Supabase secret/service-role key in an app build.
 
 Caregiver matching only offers accounts whose identity status is approved and safety module is
 complete. The prototype does not upload or store residential ID numbers or identity-card photos;
@@ -178,7 +193,10 @@ Controls to simulate the other side.
    to this prototype.
 10. **Booking status** screen: watch caregiver acceptance and arrival updates.
 11. At arrival, ask the caregiver to say the one-time code and enter it to confirm their identity.
-    Then tap **Simulate scan** (QR or NFC) to verify the safety button and start the session.
+    Care-Flash scans the live QR code shown in Care-Merchant and verifies its booking token through
+    Supabase. On installed NFC-capable phones, Care-Merchant can write the same token to a writable
+    NDEF tag for Care-Flash to read. Browser runs support camera QR scanning; NFC requires the
+    installed mobile apps and a writable NFC tag.
 12. **Active session**: a timer and the work checklist. Two separate actions:
     - **End Early** - ends the session, pays the caregiver the 50% early-end compensation, and
       refunds you the unused part.
@@ -202,8 +220,9 @@ Controls to simulate the other side.
 4. **Start trip** → **Mark arrived**.
 5. Share your one-time caregiver code at arrival. The care seeker enters it to confirm your
    identity; a wrong code cancels the booking and notifies support.
-6. **Button handover**: the booking-linked QR / NFC is ready. When the care seeker scans it, the
-   session starts. (Use Demo Controls → *Simulate care seeker button scan*.)
+6. **Button handover**: the care seeker scans the live booking QR in Care-Flash, or the caregiver
+   writes the token to an NDEF tag and the seeker reads it. The shared Supabase booking moves to
+   active only after the backend accepts the token. Demo Controls can still simulate this step.
 7. **Session**: timer + work checklist. You can **Mark work complete**, **Report the care seeker**
    (with evidence), or raise an **SOS** (ends the session and applies the compensation policy).
 8. **Mark work complete** - your service earnings are released to your balance.
