@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 import 'package:care_ui/care_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -212,4 +210,3 @@ abstract final class CareFlashTheme {
         accent: accent,
       );
 }
->>>>>>> Stashed changes

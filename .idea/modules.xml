@@ -2,8 +2,12 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+<module fileurl="file://$PROJECT_DIR$/packages/care_backend/melos_care_backend.iml" filepath="$PROJECT_DIR$/packages/care_backend/melos_care_backend.iml"/>
+<module fileurl="file://$PROJECT_DIR$/packages/care_core/melos_care_core.iml" filepath="$PROJECT_DIR$/packages/care_core/melos_care_core.iml"/>
+<module fileurl="file://$PROJECT_DIR$/packages/care_domain/melos_care_domain.iml" filepath="$PROJECT_DIR$/packages/care_domain/melos_care_domain.iml"/>
 <module fileurl="file://$PROJECT_DIR$/apps/care_flash/melos_care_flash.iml" filepath="$PROJECT_DIR$/apps/care_flash/melos_care_flash.iml"/>
 <module fileurl="file://$PROJECT_DIR$/apps/care_merchant/melos_care_merchant.iml" filepath="$PROJECT_DIR$/apps/care_merchant/melos_care_merchant.iml"/>
+<module fileurl="file://$PROJECT_DIR$/packages/care_ui/melos_care_ui.iml" filepath="$PROJECT_DIR$/packages/care_ui/melos_care_ui.iml"/>
 <module fileurl="file://$PROJECT_DIR$/melos_care_flash_workspace.iml" filepath="$PROJECT_DIR$/melos_care_flash_workspace.iml"/>
     </modules>
   </component>
