@@ -1,12 +1,16 @@
 import 'package:flutter/widgets.dart';
 
-/// Brand seeds, one per app, so the two apps read as siblings.
-///
-/// Care-Flash is teal (calm, care), Care-Merchant is indigo (steady, on duty).
-/// (AGENTS.md §5)
+/// Shared care-record palette used across both apps.
 abstract final class AppBrand {
-  static const Color careFlash = Color(0xFF0F8B8D);
-  static const Color careMerchant = Color(0xFF4F46E5);
+  static const Color careFlash = Color(0xFF174D45);
+  static const Color careMerchant = Color(0xFF174D45);
+  static const Color ink = Color(0xFF20332E);
+  static const Color paper = Color(0xFFF6F2E8);
+  static const Color paperRaised = Color(0xFFFFFDF7);
+  static const Color paperSoft = Color(0xFFFBF8F1);
+  static const Color recordRule = Color(0xFFD8D2C5);
+  static const Color stampGold = Color(0xFFE7B24C);
+  static const Color stampTerracotta = Color(0xFFD7735B);
 
   /// Neutral colours used for skeletons and pressed states.
   static const Color skeletonLight = Color(0xFFECEFF3);

@@ -68,10 +68,10 @@ void main() {
       await tester.tap(find.text("I've arrived"));
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();
-      expect(find.text('Share your identity code'), findsOneWidget);
+      expect(find.text('Share your caregiver code'), findsOneWidget);
 
       // The caregiver shares their code; the seeker confirms it in Care-Flash.
-      await tester.tap(find.text('Share your identity code'));
+      await tester.tap(find.text('Share your caregiver code'));
       await tester.pump();
       expect(find.text('Share this code with the care seeker'), findsOneWidget);
       platform.simulateCareSeekerCodeConfirmation();

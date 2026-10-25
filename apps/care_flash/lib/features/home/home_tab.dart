@@ -46,62 +46,72 @@ class HomeTab extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: AppSpacing.page,
-        children: [
-          AppText(
-            'Hi, ${user?.name.split(' ').first ?? 'there'}',
-            style: theme.textTheme.headlineSmall,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          AppText(
-            'How can we help you today?',
-            style: theme.textTheme.bodyLarge
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _NeedHelpCard(
-            onTap: () {
-              if (booking != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: AppText('You already have an ongoing request.'),
-                  ),
-                );
-                context.push(_ongoingRoute(booking));
-                return;
-              }
-              ref.read(requestDraftProvider.notifier).reset();
-              context.push(HelpRequestScreen.route);
-            },
-          ),
-          if (booking != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _OngoingActivityCard(booking: booking),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          const SectionHeader(title: 'Quick actions'),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: ListView(
+            padding: AppSpacing.page,
             children: [
-              Expanded(
-                child: _QuickAction(
-                  icon: Icons.credit_card_rounded,
-                  label: 'Payment info',
-                  onTap: () => context.push(PaymentInfoScreen.route),
+              AppText(
+                'Hi, ${user?.name.split(' ').first ?? 'there'}',
+                style: theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              AppText(
+                'How can we help you today?',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: _QuickAction(
-                  icon: Icons.support_agent_rounded,
-                  label: 'Help & support',
-                  onTap: () => context.push(HelpSupportScreen.route),
-                ),
+              const SizedBox(height: AppSpacing.lg),
+              _NeedHelpCard(
+                onTap: () {
+                  if (booking != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: AppText(
+                          'You already have an ongoing request.',
+                        ),
+                      ),
+                    );
+                    context.push(_ongoingRoute(booking));
+                    return;
+                  }
+                  ref.read(requestDraftProvider.notifier).reset();
+                  context.push(HelpRequestScreen.route);
+                },
+              ),
+              if (booking != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                const SectionHeader(title: 'Ongoing activity'),
+                const SizedBox(height: AppSpacing.xs),
+                _OngoingActivityCard(booking: booking),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              const SectionHeader(title: 'Quick actions'),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.credit_card_rounded,
+                      label: 'Payment info',
+                      onTap: () => context.push(PaymentInfoScreen.route),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.support_agent_rounded,
+                      label: 'Help & support',
+                      onTap: () => context.push(HelpSupportScreen.route),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -117,6 +127,7 @@ class _NeedHelpCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       color: theme.colorScheme.primaryContainer,
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: AppSpacing.page,
         child: Column(
@@ -132,7 +143,7 @@ class _NeedHelpCard extends StatelessWidget {
               'Need help?',
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -165,28 +176,108 @@ class _OngoingActivityCard extends StatelessWidget {
     final theme = Theme.of(context);
     final caregiver = booking.caregiver;
     final target = _ongoingRoute(booking);
+    final localizations = MaterialLocalizations.of(context);
+    final visitDate = localizations.formatMediumDate(booking.scheduledAt);
+    final visitTime = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(booking.scheduledAt),
+    );
     return AppCard(
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: AppSpacing.page,
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.secondaryContainer,
-          child: Icon(
-            booking.status.isSessionStarted
-                ? Icons.directions_run_rounded
-                : Icons.schedule_rounded,
-            color: theme.colorScheme.onSecondaryContainer,
+      onTap: () => context.push(target),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: StatusChip(
+                  label: booking.status.label,
+                  tint: AppStatusTint.info,
+                  icon: booking.status.isSessionStarted
+                      ? Icons.favorite_rounded
+                      : Icons.schedule_rounded,
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded, size: 20),
+            ],
           ),
-        ),
-        title: AppText('Ongoing: ${booking.status.label}'),
-        subtitle: AppText(
-          caregiver == null
-              ? 'Ref ${booking.requestReference}'
-              : '${caregiver.name} · Ref ${booking.requestReference}',
-        ),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => context.push(target),
+          const SizedBox(height: AppSpacing.md),
+          AppText(
+            caregiver?.name ?? booking.helpType.label,
+            style: theme.textTheme.titleMedium,
+          ),
+          if (caregiver != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            AppText(booking.helpType.label, style: theme.textTheme.bodySmall),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          Divider(color: theme.colorScheme.outlineVariant, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.sm,
+            children: [
+              _VisitDetail(
+                icon: Icons.place_outlined,
+                label: booking.location.label,
+              ),
+              _VisitDetail(icon: Icons.event_outlined, label: visitDate),
+              _VisitDetail(
+                icon: Icons.schedule_outlined,
+                label: '$visitTime · ${booking.duration.label}',
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppText(
+            'Ref ${booking.requestReference}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Divider(color: theme.colorScheme.outlineVariant, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Icon(
+                Icons.arrow_outward_rounded,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: AppText(
+                  'View booking details',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 20),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _VisitDetail extends StatelessWidget {
+  const _VisitDetail({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        const SizedBox(width: AppSpacing.xs),
+        AppText(label, style: theme.textTheme.bodySmall),
+      ],
     );
   }
 }

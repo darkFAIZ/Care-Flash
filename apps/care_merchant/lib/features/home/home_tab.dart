@@ -39,21 +39,26 @@ class HomeTab extends ConsumerWidget {
             ),
         ],
       ),
-      body: ListView(
-        padding: AppSpacing.page,
-        children: [
-          _StatusHeader(caregiver: caregiver),
-          const SizedBox(height: AppSpacing.lg),
-          if (!_needsOnboarding(caregiver) && active != null) ...[
-            _ActiveBookingCard(booking: active),
-          ] else if (!_needsOnboarding(caregiver) && offer != null) ...[
-            _RequestCard(booking: offer),
-          ] else if (_needsOnboarding(caregiver)) ...[
-            _OnboardingCard(caregiver: caregiver),
-          ] else ...[
-            _WaitingCard(caregiver: caregiver),
-          ],
-        ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 680),
+          child: ListView(
+            padding: AppSpacing.page,
+            children: [
+              _StatusHeader(caregiver: caregiver),
+              const SizedBox(height: AppSpacing.lg),
+              if (!_needsOnboarding(caregiver) && active != null) ...[
+                _ActiveBookingCard(booking: active),
+              ] else if (!_needsOnboarding(caregiver) && offer != null) ...[
+                _RequestCard(booking: offer),
+              ] else if (_needsOnboarding(caregiver)) ...[
+                _OnboardingCard(caregiver: caregiver),
+              ] else ...[
+                _WaitingCard(caregiver: caregiver),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -76,7 +81,7 @@ class _StatusHeader extends StatelessWidget {
     return AppCard(
       child: Row(
         children: [
-          UserAvatar(name: caregiver.name, radius: 24),
+          UserAvatar(name: caregiver.name, radius: 25),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -84,30 +89,21 @@ class _StatusHeader extends StatelessWidget {
               children: [
                 AppText(caregiver.name, style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.xs),
-                Row(
-                  children: [
-                    Icon(
-                      canReceive
-                          ? Icons.circle_rounded
-                          : Icons.circle_outlined,
-                      size: 12,
-                      color: canReceive
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline,
+                if (canReceive)
+                  const StatusChip(
+                    label: 'Available for requests',
+                    tint: AppStatusTint.success,
+                    icon: Icons.check_circle_outline_rounded,
+                  )
+                else
+                  AppText(
+                    available
+                        ? 'Finish onboarding to receive requests'
+                        : 'Unavailable',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Flexible(
-                      child: AppText(
-                        canReceive
-                            ? 'Available for requests'
-                            : available
-                                ? 'Finish onboarding to receive requests'
-                                : 'Unavailable',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),
@@ -131,31 +127,31 @@ class _OnboardingCard extends StatelessWidget {
 
     final (title, body, route, cta) = switch (status) {
       VerificationStatus.notSubmitted => (
-          'Verify your account',
-          'Submit your Residential ID so a care seeker can trust who arrives. '
-              'You also need the safety badge before requests arrive.',
-          OnboardingScreen.route,
-          'Start verification',
-        ),
+        'Verify your account',
+        'Submit your Residential ID so a care seeker can trust who arrives. '
+            'You also need the safety badge before requests arrive.',
+        OnboardingScreen.route,
+        'Start verification',
+      ),
       VerificationStatus.pending => (
-          'Verification in review',
-          'Your Residential ID is being reviewed. Complete the safety module while '
-              'you wait.',
-          SafetyModuleScreen.route,
-          'Open the safety module',
-        ),
+        'Verification in review',
+        'Your Residential ID is being reviewed. Complete the safety module while '
+            'you wait.',
+        SafetyModuleScreen.route,
+        'Open the safety module',
+      ),
       VerificationStatus.rejected => (
-          'Verification needs attention',
-          caregiver.rejectionReason ?? 'Your submission was not accepted.',
-          OnboardingScreen.route,
-          'Resubmit your Residential ID',
-        ),
+        'Verification needs attention',
+        caregiver.rejectionReason ?? 'Your submission was not accepted.',
+        OnboardingScreen.route,
+        'Resubmit your Residential ID',
+      ),
       VerificationStatus.approved => (
-          'Get your safety badge',
-          'Complete the safety module to start receiving requests.',
-          SafetyModuleScreen.route,
-          'Open the safety module',
-        ),
+        'Get your safety badge',
+        'Complete the safety module to start receiving requests.',
+        SafetyModuleScreen.route,
+        'Open the safety module',
+      ),
     };
 
     return AppCard(
@@ -173,7 +169,9 @@ class _OnboardingCard extends StatelessWidget {
                     : theme.colorScheme.primary,
               ),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: AppText(title, style: theme.textTheme.titleMedium)),
+              Expanded(
+                child: AppText(title, style: theme.textTheme.titleMedium),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -216,7 +214,7 @@ class _WaitingCard extends StatelessWidget {
           AppText(
             available
                 ? 'When a care seeker nearby asks for help, the request '
-                    'appears here. You have 60 seconds to respond.'
+                      'appears here. You have 60 seconds to respond.'
                 : 'Turn availability on in your profile to receive requests.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -245,19 +243,23 @@ class _RequestCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.notifications_active_rounded,
-                  color: theme.colorScheme.primary),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: AppText('New request', style: theme.textTheme.titleMedium),
+              Flexible(
+                child: StatusChip(
+                  label: 'New request',
+                  tint: AppStatusTint.warning,
+                  icon: Icons.notifications_active_rounded,
+                ),
+              ),
+              AppText(
+                booking.requestReference,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          AppText(booking.requestReference,
-              style: theme.textTheme.labelLarge),
-          const SizedBox(height: AppSpacing.xs),
-          AppText(booking.helpType.label, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: AppSpacing.lg),
+          AppText(booking.helpType.label, style: theme.textTheme.titleLarge),
           if (booking.description != null) ...[
             const SizedBox(height: AppSpacing.xs),
             AppText(
@@ -267,13 +269,17 @@ class _RequestCard extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: AppSpacing.lg),
+          Divider(color: theme.colorScheme.outlineVariant, height: 1),
           const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.lg,
             runSpacing: AppSpacing.xs,
             children: [
               _Meta(
-                  icon: Icons.schedule_rounded, label: booking.duration.label),
+                icon: Icons.schedule_rounded,
+                label: booking.duration.label,
+              ),
               _Meta(
                 icon: Icons.event_rounded,
                 label: _formatDate(booking.scheduledAt),
@@ -288,7 +294,10 @@ class _RequestCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.lg),
           AppButton(
             label: 'View and respond',
-            onPressed: () => context.push(IncomingRequestScreen.route),
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              context.push(IncomingRequestScreen.route);
+            },
           ),
         ],
       ),
@@ -313,8 +322,11 @@ class _Meta extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon,
-            size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        Icon(
+          icon,
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
         const SizedBox(width: AppSpacing.xs),
         AppText(label, style: Theme.of(context).textTheme.bodySmall),
       ],
@@ -345,26 +357,40 @@ class _ActiveBookingCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.schedule_rounded, color: theme.colorScheme.primary),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: AppText(
-                  booking.status.label,
-                  style: theme.textTheme.titleMedium,
+              Flexible(
+                child: StatusChip(
+                  label: booking.status.label,
+                  tint: AppStatusTint.info,
+                  icon: Icons.schedule_rounded,
+                ),
+              ),
+              AppText(
+                booking.requestReference,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          AppText(booking.helpType.label, style: theme.textTheme.bodyLarge),
+          const SizedBox(height: AppSpacing.lg),
+          AppText(booking.helpType.label, style: theme.textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.xs),
           AppText(
             booking.location.label,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppButton(label: action, onPressed: () => context.push(BookingScreen.route)),
+          Divider(color: theme.colorScheme.outlineVariant, height: 1),
+          const SizedBox(height: AppSpacing.md),
+          AppText('Next step', style: theme.textTheme.labelMedium),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: action,
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () => context.push(BookingScreen.route),
+          ),
         ],
       ),
     );

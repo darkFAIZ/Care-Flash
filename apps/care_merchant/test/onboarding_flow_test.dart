@@ -56,7 +56,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Residential ID number'),
       '3174012501990001',
     );
-    await tester.tap(find.text('Attach Residential ID photo'));
+    await tester.tap(find.text('Attach identity card photo'));
     await tester.pump();
     await tester.tap(find.text('Submit for review'));
     await tester.pump(const Duration(milliseconds: 10));

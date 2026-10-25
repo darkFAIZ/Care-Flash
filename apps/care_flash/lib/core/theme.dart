@@ -6,14 +6,12 @@ import 'package:flutter/material.dart';
 /// The real theme lives in the shared `care_ui` package so both apps stay in
 /// step; this class keeps the app-facing name. (AGENTS.md §5)
 abstract final class CareFlashTheme {
-  /// The teal seed colour, re-exported for screens that need a raw colour.
+  /// The shared record-green seed colour.
   static Color get seed => AppBrand.careFlash;
 
   static ThemeData light({AppAccent? accent}) =>
       AppThemes.careFlash(accent: accent);
 
-  static ThemeData dark({AppAccent? accent}) => AppThemes.careFlash(
-        brightness: Brightness.dark,
-        accent: accent,
-      );
+  static ThemeData dark({AppAccent? accent}) =>
+      AppThemes.careFlash(brightness: Brightness.dark, accent: accent);
 }

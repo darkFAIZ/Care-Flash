@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T21:45:53+07:00",
+  "title": "Design System: Care-Flash and Care-Merchant",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Puskesmas Green",
+        "tonalRamp": ["#123A34", "#174D45", "#2B655C", "#527F76", "#789991", "#A2B6AF", "#CAD7D0", "#F0F4F1"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Warm Record Ink",
+        "tonalRamp": ["#121F1B", "#20332E", "#394B46", "#586A64", "#7A8984", "#A1ADA8", "#C8D0CD", "#F3F5F4"]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Clinic Paper",
+        "tonalRamp": ["#3C382F", "#5D574C", "#817A6D", "#AAA394", "#D2CCBE", "#E6E0D3", "#F6F2E8", "#FFFDF7"]
+      },
+      "stamp-gold": {
+        "role": "secondary",
+        "displayName": "Record Gold",
+        "tonalRamp": ["#422B08", "#68430E", "#91601A", "#B37D25", "#CE9635", "#E7B24C", "#F2D18B", "#FAEBCB"]
+      },
+      "stamp-terracotta": {
+        "role": "tertiary",
+        "displayName": "Terracotta Stamp",
+        "tonalRamp": ["#48251D", "#703B2F", "#985140", "#B96551", "#D7735B", "#E29682", "#F0BCAF", "#F9E0D9"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Success Green",
+        "tonalRamp": ["#073C27", "#05603A", "#087747", "#12B76A", "#32D583", "#75E4A8", "#A9F0C7", "#D1FADF"]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Caution Amber",
+        "tonalRamp": ["#462C05", "#75410A", "#93370D", "#B54708", "#F59E0B", "#FEC84B", "#FEDF89", "#FEF0C7"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Alert Red",
+        "tonalRamp": ["#4A1512", "#701A16", "#912018", "#B42318", "#D92D20", "#F97066", "#FECACA", "#FEE4E2"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Large feature and screen title style."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Home greetings and high-level headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings and visit identity."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary reading and visit detail text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Supporting fields and compact status labels."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Full-width filled action with a minimum 52px height.",
+      "html": "<button class=\"ds-button-primary\">Start a request</button>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; min-height: 52px; padding: 0 24px; border: 0; border-radius: 16px; background: #174D45; color: #fff; font: 600 16px/1.25 'Plus Jakarta Sans', sans-serif; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined secondary action using the shared button geometry.",
+      "html": "<button class=\"ds-button-secondary\">View details</button>",
+      "css": ".ds-button-secondary { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; min-height: 52px; padding: 0 24px; border: 1px solid #174D45; border-radius: 16px; background: transparent; color: #174D45; font: 600 16px/1.25 'Plus Jakarta Sans', sans-serif; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis text action with a 48px minimum target.",
+      "html": "<button class=\"ds-button-ghost\">Cancel</button>",
+      "css": ".ds-button-ghost { display: inline-flex; align-items: center; justify-content: center; min-width: 48px; min-height: 48px; padding: 0 12px; border: 0; border-radius: 16px; background: transparent; color: #174D45; font: 600 16px/1.25 'Plus Jakarta Sans', sans-serif; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Filled, rounded field with a tonal outline and primary focus border.",
+      "html": "<label class=\"ds-field\"><span>Visit location</span><input placeholder=\"Enter an address\" /></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: #20332E; font: 500 13px/1.35 'Plus Jakarta Sans', sans-serif; } .ds-field input { min-height: 48px; padding: 15px 16px; border: 1px solid #D8D2C5; border-radius: 12px; background: #EAE4D7; color: #20332E; font: 400 15px/1.45 'Plus Jakarta Sans', sans-serif; } .ds-field input:focus { border: 2px solid #174D45; outline: none; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "status-chip",
+      "description": "Pill-shaped state label with optional icon and semantic tint.",
+      "html": "<span class=\"ds-status-chip\">Confirmed</span>",
+      "css": ".ds-status-chip { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: #D1FADF; color: #05603A; font: 600 13px/1.35 'Plus Jakarta Sans', sans-serif; }"
+    },
+    {
+      "name": "Record Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat, softly outlined container for booking details and actions.",
+      "html": "<article class=\"ds-record-card\"><strong>Care visit</strong><p>Visit details and next step</p></article>",
+      "css": ".ds-record-card { padding: 16px; border: 1px solid #D8D2C5; border-radius: 16px; background: #FBF8F1; color: #20332E; font-family: 'Plus Jakarta Sans', sans-serif; } .ds-record-card strong { font-size: 20px; font-weight: 600; } .ds-record-card p { margin: 12px 0 0; font-size: 15px; line-height: 1.45; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "72px Material-style app navigation with persistent labels.",
+      "html": "<nav class=\"ds-navigation\"><span class=\"ds-navigation-item\">Home</span><span class=\"ds-navigation-item\">Bookings</span></nav>",
+      "css": ".ds-navigation { display: flex; align-items: center; justify-content: space-around; height: 72px; background: #F6F2E8; color: #20332E; font: 500 12px/1.35 'Plus Jakarta Sans', sans-serif; } .ds-navigation-item { padding: 8px 16px; border-radius: 999px; }"
+    },
+    {
+      "name": "Clinic Visit Record",
+      "kind": "custom",
+      "description": "Booking state, visit facts, reference, and next action in one record card.",
+      "html": "<article class=\"ds-visit-record\"><div class=\"ds-visit-record-status\">Completed</div><h3>Caregiver name</h3><div class=\"ds-visit-record-rule\"></div><p>Location · Visit date · Time</p><small>Ref CF-0000</small><div class=\"ds-visit-record-next\">View booking details&nbsp; ›</div></article>",
+      "css": ".ds-visit-record { padding: 16px; border: 1px solid #D8D2C5; border-radius: 16px; background: #FBF8F1; color: #20332E; font-family: 'Plus Jakarta Sans', sans-serif; } .ds-visit-record-status { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: #D1FADF; color: #05603A; font-size: 13px; font-weight: 600; } .ds-visit-record h3 { margin: 16px 0 0; font-size: 20px; font-weight: 600; } .ds-visit-record-rule { height: 1px; margin: 12px 0; background: #D8D2C5; } .ds-visit-record p { font-size: 13px; line-height: 1.35; } .ds-visit-record small { font-size: 13px; } .ds-visit-record-next { margin-top: 16px; color: #174D45; font-size: 15px; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Clinic Visit Record",
+    "overview": "The shared visual language treats a care request as a legible visit record: warm paper-like surfaces, deep green text and actions, restrained status color, and compactly organized details. It is calm and practical rather than a generic dashboard; the record card brings status, visit facts, and the next action into one readable unit.\n\nBoth apps use the same Material 3 theme foundation, Plus Jakarta Sans, spacing, shapes, and shared UI widgets. The home surfaces differ by role—Care-Flash foregrounds starting or following a request; Care-Merchant foregrounds caregiver readiness and the request or active visit—while retaining the same record-first card grammar.",
+    "keyCharacteristics": [
+      "Warm, lightly ruled surfaces with deep green as the shared brand seed.",
+      "Distinct status tints and restrained gold/terracotta accents.",
+      "Reused typography, component shapes, and page width across both apps."
+    ],
+    "rules": [
+      {
+        "name": "The Shared Seed Rule",
+        "body": "Care-Flash and Care-Merchant use the same green seed by default; optional appearance accents replace the seed and regenerate the Material 3 scheme.",
+        "section": "colors"
+      },
+      {
+        "name": "The Shared Type Rule",
+        "body": "Use the Plus Jakarta Sans Material scale across both apps; distinguish record metadata through size, weight, and semantic color, not a second typeface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled-Surface Rule",
+        "body": "Separate shared cards with tone and a subtle border, not a drop shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the shared green-seeded Material 3 theme and shared typography, spacing, and radius scales by default.",
+      "Do keep status meaning explicit through semantic colors and labels, and maintain readable contrast between each container and foreground.",
+      "Do organize a visit record so its current state and actionable next step are easy to find.",
+      "Do preserve the 680px home content maximum and 20px page gutter where using the established home layout."
+    ],
+    "donts": [
+      "Don't add drop shadows to the shared flat card treatment.",
+      "Don't use status colors as interchangeable decoration; success, warning, and danger are separate semantic states.",
+      "Don't promote one app's home composition into a mandatory layout for every screen; the shared system supports role-specific workflows."
+    ]
+  }
+}
