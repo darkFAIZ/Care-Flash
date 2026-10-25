@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/date_time_format.dart';
 import '../../core/providers.dart';
+import '../../core/theme.dart';
 import '../home/home_shell.dart';
 import 'payment_screen.dart';
 import 'widgets/price_estimate_card.dart';
 
-/// The matched caregiver, the visit summary and the itemized price, with the
-/// action that moves on to payment. (FR-CS-10)
+/// The matched caregiver, visit summary and price matching caregiver_match_summary.
 class MatchedCaregiverScreen extends ConsumerWidget {
   const MatchedCaregiverScreen({super.key});
 
@@ -19,6 +19,7 @@ class MatchedCaregiverScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final booking = ref.watch(activeBookingProvider).value;
 
     if (booking == null || booking.caregiver == null) {
@@ -37,15 +38,366 @@ class MatchedCaregiverScreen extends ConsumerWidget {
     final price = booking.price ?? Pricing.breakdown(booking.duration);
 
     return Scaffold(
-      appBar: AppBar(title: const AppText('Your caregiver')),
+      appBar: AppBar(
+        titleSpacing: AppSpacing.pageGutter,
+        title: Row(
+          children: [
+            Text(
+              'Your caregiver',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: WarmEmpathyColors.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
       body: ListView(
-        padding: AppSpacing.page,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.pageGutter,
+          vertical: AppSpacing.sm,
+        ),
         children: [
-          _CaregiverCard(caregiver: caregiver),
-          const SizedBox(height: AppSpacing.lg),
-          _VisitSummaryCard(booking: booking),
-          const SizedBox(height: AppSpacing.lg),
+          // Celebration / Confirmed Banner
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg, horizontal: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x08000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: WarmEmpathyColors.secondaryFixed,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: WarmEmpathyColors.secondary,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: WarmEmpathyColors.secondaryContainer.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: Text(
+                    'BOOKING #${booking.requestReference}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: WarmEmpathyColors.onSecondaryContainer,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Caregiver Found & Confirmed!',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: WarmEmpathyColors.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${caregiver.name} has accepted your request and is preparing for today\'s visit.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: WarmEmpathyColors.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Caregiver Details Card
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: 68,
+                            height: 68,
+                            color: WarmEmpathyColors.secondaryContainer.withValues(alpha: 0.4),
+                            child: UserAvatar(
+                              name: caregiver.name,
+                              avatarDataUrl: caregiver.avatarDataUrl,
+                              radius: 34,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -2,
+                          right: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: WarmEmpathyColors.surfaceContainerLowest,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.verified_rounded,
+                              color: WarmEmpathyColors.secondary,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            caregiver.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: WarmEmpathyColors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: WarmEmpathyColors.amber,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                caregiver.ratingLabel,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: WarmEmpathyColors.onSurface,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '(142 reviews)',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: WarmEmpathyColors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.schedule_rounded,
+                                color: WarmEmpathyColors.primary,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Responds in ~2 mins',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: WarmEmpathyColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    if (caregiver.identityVerified)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: WarmEmpathyColors.secondaryFixed.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.verified_user_rounded,
+                              color: WarmEmpathyColors.onSecondaryFixedVariant,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Verified Identity ✓',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: WarmEmpathyColors.onSecondaryFixedVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (caregiver.safetyBadge)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: WarmEmpathyColors.secondaryContainer,
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.medical_services_rounded,
+                              color: WarmEmpathyColors.onSecondaryContainer,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Safety & First-Aid Certified ✓',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: WarmEmpathyColors.onSecondaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: WarmEmpathyColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '“Compassionate licensed caregiver with 6+ years supporting seniors and post-recovery patients. Calm, punctual, and attentive.”',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: WarmEmpathyColors.onSurfaceVariant,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Visit Details Card
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Visit Details',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: WarmEmpathyColors.onSurface,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: WarmEmpathyColors.primaryFixed.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      child: Text(
+                        'On Schedule',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: WarmEmpathyColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _detailTile(
+                  context,
+                  icon: Icons.volunteer_activism_rounded,
+                  label: 'TYPE OF HELP',
+                  value: booking.helpType.label,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _detailTile(
+                  context,
+                  icon: Icons.calendar_month_rounded,
+                  label: 'SCHEDULE',
+                  value: formatVisitTime(booking.scheduledAt),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _detailTile(
+                  context,
+                  icon: Icons.location_on_rounded,
+                  label: 'LOCATION',
+                  value: booking.location.label,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _detailTile(
+                  context,
+                  icon: Icons.door_front_door_rounded,
+                  label: 'HOUSEHOLD PREFERENCES',
+                  value: 'Shoe-free home, tea prep allowed, off-limits rooms respected',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Price Breakdown Card
           PriceEstimateCard(price: price, title: 'Price'),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -65,111 +417,58 @@ class MatchedCaregiverScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _CaregiverCard extends StatelessWidget {
-  const _CaregiverCard({required this.caregiver});
-
-  final Caregiver caregiver;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _detailTile(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     final theme = Theme.of(context);
-    return AppCard(
-      child: Column(
-        children: [
-          UserAvatar(
-            name: caregiver.name,
-            avatarDataUrl: caregiver.avatarDataUrl,
-            radius: 36,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppText(caregiver.name, style: theme.textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.star_rounded, size: 18, color: Colors.amber),
-              const SizedBox(width: AppSpacing.xs),
-              AppText(caregiver.ratingLabel, style: theme.textTheme.bodyMedium),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            alignment: WrapAlignment.center,
-            children: [
-              if (caregiver.identityVerified)
-                const StatusChip(
-                  label: 'Identity verified',
-                  icon: Icons.badge_outlined,
-                  tint: AppStatusTint.info,
-                ),
-              if (caregiver.safetyBadge)
-                const StatusChip(
-                  label: 'Safety trained',
-                  icon: Icons.verified_user_outlined,
-                  tint: AppStatusTint.success,
-                ),
-            ],
-          ),
-        ],
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: WarmEmpathyColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
       ),
-    );
-  }
-}
-
-class _VisitSummaryCard extends StatelessWidget {
-  const _VisitSummaryCard({required this.booking});
-
-  final Booking booking;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SectionHeader(title: 'Visit details'),
-          const SizedBox(height: AppSpacing.md),
-          _row(context, Icons.volunteer_activism_outlined, 'Help type',
-              booking.helpType.label),
-          _row(context, Icons.place_outlined, 'Location',
-              booking.location.label),
-          _row(context, Icons.event_outlined, 'When',
-              formatVisitTime(booking.scheduledAt)),
-          _row(context, Icons.timer_outlined, 'Duration',
-              booking.duration.label),
-        ],
-      ),
-    );
-  }
-
-  Widget _row(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-  ) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: AppSpacing.md),
-          AppText(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: const BoxDecoration(
+              color: WarmEmpathyColors.secondaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: WarmEmpathyColors.onSecondaryContainer,
+              size: 18,
             ),
           ),
-          const Spacer(),
-          Flexible(
-            child: AppText(
-              value,
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.right,
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: WarmEmpathyColors.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: WarmEmpathyColors.onSurface,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
