@@ -7,18 +7,71 @@ import 'package:go_router/go_router.dart';
 import '../../core/date_time_format.dart';
 import '../../core/providers.dart';
 import '../home/home_shell.dart';
+import 'matching_screen.dart';
 import 'payment_screen.dart';
 import 'widgets/price_estimate_card.dart';
 
 /// The matched caregiver, the visit summary and the itemized price, with the
 /// action that moves on to payment. (FR-CS-10)
-class MatchedCaregiverScreen extends ConsumerWidget {
+class MatchedCaregiverScreen extends ConsumerStatefulWidget {
   const MatchedCaregiverScreen({super.key});
 
   static const String route = '/caregiver';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MatchedCaregiverScreen> createState() =>
+      _MatchedCaregiverScreenState();
+}
+
+class _MatchedCaregiverScreenState
+    extends ConsumerState<MatchedCaregiverScreen> {
+  bool _findingAnother = false;
+
+  Future<void> _findAnotherCaregiver() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const AppText('Look for another caregiver?'),
+        content: const AppText(
+          'We will release this match and search for someone else. The Grab '
+          'fare is only an estimate and may be similar with another caregiver.',
+        ),
+        actions: [
+          AppButton(
+            label: 'Keep this match',
+            variant: AppButtonVariant.ghost,
+            expand: false,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          AppButton(
+            label: 'Find another',
+            expand: false,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _findingAnother = true);
+    try {
+      final booking = await ref.read(platformProvider).findAnotherCaregiver();
+      if (!mounted) return;
+      context.go(booking.status == BookingStatus.matched
+          ? MatchedCaregiverScreen.route
+          : MatchingScreen.route);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not find another caregiver: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _findingAnother = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final booking = ref.watch(activeBookingProvider).value;
 
     if (booking == null || booking.caregiver == null) {
@@ -46,6 +99,18 @@ class MatchedCaregiverScreen extends ConsumerWidget {
           _VisitSummaryCard(booking: booking),
           const SizedBox(height: AppSpacing.lg),
           PriceEstimateCard(price: price, title: 'Price'),
+          const SizedBox(height: AppSpacing.sm),
+          AppButton(
+            label: 'Find another caregiver',
+            variant: AppButtonVariant.ghost,
+            loading: _findingAnother,
+            onPressed: _findingAnother ? null : _findAnotherCaregiver,
+          ),
+          AppText(
+            'The Grab fare is an estimate and may not change with a new match.',
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
       bottomNavigationBar: SafeArea(

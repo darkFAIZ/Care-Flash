@@ -40,6 +40,8 @@ class SupabaseCareSeekerPlatform implements CareSeekerPlatform {
   Future<Booking> retryWithGenderFilter(GenderFilter filter) =>
       _store.retryWithGenderFilter(filter);
   @override
+  Future<Booking> findAnotherCaregiver() => _store.findAnotherCaregiver();
+  @override
   Future<void> cancelBooking(CancellationReason reason) =>
       _store.action('cancel', {'reason': reason.name});
   @override
@@ -312,7 +314,14 @@ class _CareStore {
         seekerHistoryChanges.add(seekerHistory);
       } else {
         incoming = bookings.where((b) => b.status == BookingStatus.paidPending).firstOrNull;
-        activeCaregiverBooking = open.where((b) => b.status != BookingStatus.paidPending).firstOrNull;
+        activeCaregiverBooking = open.where((b) => const {
+          BookingStatus.confirmed,
+          BookingStatus.caregiverTravelling,
+          BookingStatus.arrived,
+          BookingStatus.codeVerified,
+          BookingStatus.buttonVerified,
+          BookingStatus.active,
+        }.contains(b.status)).firstOrNull;
         caregiverHistory = bookings.where((b) => b.status.isFinished).toList();
         incomingChanges.add(incoming);
         caregiverBookingChanges.add(activeCaregiverBooking);
@@ -506,6 +515,19 @@ class _CareStore {
     if (old == null) throw StateError('There is no active request to retry.');
     await actionResult('cancel', {'reason': CancellationReason.noMatch.name}, old.id);
     return submitRequest(HelpRequest(helpType: old.helpType, checklist: old.checklist, location: old.location, scheduledAt: old.scheduledAt, duration: old.duration, description: old.description, genderFilter: filter));
+  }
+  Future<Booking> findAnotherCaregiver() async {
+    final old = activeSeekerBooking;
+    if (old == null || old.status != BookingStatus.matched) {
+      throw StateError('There is no price quote to rematch.');
+    }
+    await client.rpc('rematch_care_request', params: {'p_booking_id': old.id});
+    await refresh();
+    final updated = activeSeekerBooking;
+    if (updated == null || updated.id != old.id) {
+      throw StateError('The rematched request did not reload.');
+    }
+    return updated;
   }
   Future<Map<String, Object?>> actionResult(String action, [Map<String, Object?> data = const {}, String? bookingId]) async {
     final id = bookingId ?? activeSeekerBooking?.id ?? activeCaregiverBooking?.id ?? incoming?.id;

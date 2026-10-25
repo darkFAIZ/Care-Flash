@@ -97,8 +97,9 @@ The app uses `profiles`, `caregiver_profiles`, `bookings`, protected booking det
 rating/feedback tables. Request creation and lifecycle changes go through database RPC functions;
 booking updates are broadcast over Realtime. Apply new migrations from `supabase/migrations/` to the
 connected project before expecting newly added RPC features to work. For the newest safety-button
-token lookup and laptop scan simulation, execute
-`20261024153000_safety_button_demo_and_token.sql` in the Supabase SQL Editor. The linked project has
+token lookup, laptop scan simulation, and pre-payment rematching, execute
+`20261024153000_safety_button_demo_and_token.sql` and
+`20261025160000_rematch_care_request.sql` in the Supabase SQL Editor. The linked project has
 remote migration-history entries with no matching local files, so `supabase db push` currently stops
 before applying migrations; reconcile those histories before using `db push` again. Never put a
 Supabase secret/service-role key in an app build.

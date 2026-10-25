@@ -49,11 +49,16 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
 
   Future<void> _accept() async {
     setState(() => _busy = true);
-    await ref.read(platformProvider).acceptRequest();
-    if (!mounted) {
-      return;
+    try {
+      await ref.read(platformProvider).acceptRequest();
+      if (mounted) context.go(HomeShell.route);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not accept this request: $error')),
+      );
+      setState(() => _busy = false);
     }
-    context.go(HomeShell.route);
   }
 
   Future<void> _decline() async {
@@ -84,11 +89,16 @@ class _IncomingRequestScreenState extends ConsumerState<IncomingRequestScreen> {
       return;
     }
     setState(() => _busy = true);
-    await ref.read(platformProvider).declineRequest();
-    if (!mounted) {
-      return;
+    try {
+      await ref.read(platformProvider).declineRequest();
+      if (mounted) context.go(HomeShell.route);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not decline this request: $error')),
+      );
+      setState(() => _busy = false);
     }
-    context.go(HomeShell.route);
   }
 
   @override

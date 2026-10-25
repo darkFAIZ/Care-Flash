@@ -502,17 +502,38 @@ class CareBackendState {
     return _attemptMatch(booking.id).toJson();
   }
 
-  Booking _attemptMatch(String bookingId) {
+  Map<String, Object?> findAnotherCaregiver(String seekerId) {
+    final booking = _openSeekerBooking(seekerId);
+    if (booking.status != BookingStatus.matched) {
+      throw StateError('There is no price quote to rematch.');
+    }
+    final previousId = booking.caregiver?.id;
+    if (previousId == null) {
+      throw StateError('The current match has no caregiver to replace.');
+    }
+    return _attemptMatch(
+      booking.id,
+      excludedCaregiverIds: {previousId},
+    ).toJson();
+  }
+
+  Booking _attemptMatch(
+    String bookingId, {
+    Set<String> excludedCaregiverIds = const {},
+  }) {
     final booking = _requireBooking(bookingId);
     CaregiverAccount? match;
     for (final c in _caregivers.values) {
-      if (c.canReceiveRequests && booking.genderFilter.matches(c.gender)) {
+      if (c.canReceiveRequests &&
+          booking.genderFilter.matches(c.gender) &&
+          !excludedCaregiverIds.contains(c.id)) {
         match = c;
         break;
       }
     }
     if (match == null) {
       _replaceBooking(booking.copyWith(
+        caregiver: null,
         status: BookingStatus.noMatch,
         updates: [
           ...booking.updates,

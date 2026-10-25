@@ -196,6 +196,12 @@ class RemoteCarePlatform implements CareSeekerPlatform {
   }
 
   @override
+  Future<Booking> findAnotherCaregiver() async {
+    final json = await _call('findAnotherCaregiver');
+    return Booking.fromJson(json);
+  }
+
+  @override
   Future<void> cancelBooking(CancellationReason reason) =>
       _callVoid('cancelBooking', {'reason': reason.name});
 

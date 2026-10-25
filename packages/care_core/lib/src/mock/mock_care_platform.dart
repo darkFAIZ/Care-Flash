@@ -270,6 +270,31 @@ class MockCarePlatform implements CareSeekerPlatform {
   }
 
   @override
+  Future<Booking> findAnotherCaregiver() async {
+    final booking = _activeBooking;
+    if (booking == null || booking.status != BookingStatus.matched) {
+      throw StateError('There is no price quote to rematch.');
+    }
+    final previousCaregiverId = booking.caregiver?.id;
+    if (previousCaregiverId != null) {
+      _declinedCaregiverIds.add(previousCaregiverId);
+    }
+    final next = _nextMatchingCaregiver(booking.genderFilter);
+    final status = next == null ? BookingStatus.noMatch : BookingStatus.matched;
+    final updated = booking
+        .copyWith(caregiver: next, status: status)
+        .withUpdate(BookingUpdate(
+          status: status,
+          message: next == null
+              ? 'No other caregiver is available right now.'
+              : 'A different caregiver was found. Review the updated price.',
+          at: DateTime.now(),
+        ));
+    await _setActiveBooking(updated);
+    return updated;
+  }
+
+  @override
   Future<void> cancelBooking(CancellationReason reason) async {
     final booking = _activeBooking;
     if (booking == null) {
