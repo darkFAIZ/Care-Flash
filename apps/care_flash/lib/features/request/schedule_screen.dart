@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/date_time_format.dart';
+import '../../core/theme.dart';
 import 'gender_filter_screen.dart';
 import 'request_draft.dart';
 import 'widgets/wizard_scaffold.dart';
 
-/// Step 3: location, date, time and duration. (FR-CS-6)
+/// Step 3: location, date, time and duration matching Stitch. (FR-CS-6)
 class ScheduleScreen extends ConsumerStatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -81,92 +82,327 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SectionHeader(title: 'Where'),
-          const SizedBox(height: AppSpacing.xs),
-          for (final location in VisitLocation.mockPresets) ...[
-            AppCard(
-              compact: true,
-              highlighted: draft.location?.label == location.label,
-              onTap: () => controller.setLocation(location),
-              child: Row(
-                children: [
-                  Icon(
-                    draft.location?.label == location.label
-                        ? Icons.check_circle_rounded
-                        : Icons.place_outlined,
-                    color: draft.location?.label == location.label
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(location.label,
-                            style: theme.textTheme.bodyLarge),
-                        const SizedBox(height: 2),
-                        AppText(
-                          location.address,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+          // Where Card Container
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      color: WarmEmpathyColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Service Address',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: WarmEmpathyColors.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final location in VisitLocation.mockPresets) ...[
+                  InkWell(
+                    onTap: () => controller.setLocation(location),
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: draft.location?.label == location.label
+                            ? WarmEmpathyColors.primary.withValues(alpha: 0.06)
+                            : WarmEmpathyColors.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: draft.location?.label == location.label
+                              ? WarmEmpathyColors.primary
+                              : Colors.transparent,
+                          width: draft.location?.label == location.label ? 1.5 : 1,
                         ),
-                      ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            draft.location?.label == location.label
+                                ? Icons.check_circle_rounded
+                                : Icons.place_outlined,
+                            color: draft.location?.label == location.label
+                                ? WarmEmpathyColors.primary
+                                : WarmEmpathyColors.onSurfaceVariant,
+                            size: 22,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  location.label,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: draft.location?.label == location.label
+                                        ? WarmEmpathyColors.primary
+                                        : WarmEmpathyColors.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  location.address,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: WarmEmpathyColors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
+          ),
           const SizedBox(height: AppSpacing.md),
-          const SectionHeader(title: 'When'),
-          const SizedBox(height: AppSpacing.xs),
-          AppCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.event_outlined),
-                  title: const AppText('Date'),
-                  subtitle: AppText(
-                    _scheduledAt == null
-                        ? 'Choose a date'
-                        : formatVisitTime(_scheduledAt!).split(',').first,
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: _pickDate,
+
+          // When Card Container
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 6,
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.schedule_outlined),
-                  title: const AppText('Time'),
-                  subtitle: AppText(
-                    _scheduledAt == null
-                        ? 'Choose a time'
-                        : formatClock(_scheduledAt!),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: _pickTime,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_rounded,
+                      color: WarmEmpathyColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Schedule & Arrival Time',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: WarmEmpathyColors.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickDate,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: WarmEmpathyColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today_rounded,
+                                    color: WarmEmpathyColors.primary,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Date',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: WarmEmpathyColors.onSurfaceVariant,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _scheduledAt == null
+                                    ? 'Choose a date'
+                                    : formatVisitTime(_scheduledAt!).split(',').first,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: WarmEmpathyColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: InkWell(
+                        onTap: _pickTime,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: WarmEmpathyColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.schedule_rounded,
+                                    color: WarmEmpathyColors.primary,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Time',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: WarmEmpathyColors.onSurfaceVariant,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _scheduledAt == null
+                                    ? 'Choose a time'
+                                    : formatClock(_scheduledAt!),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: WarmEmpathyColors.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          const SectionHeader(title: 'How long'),
-          const SizedBox(height: AppSpacing.xs),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final duration in VisitDuration.values)
-                ChoiceChip(
-                  label: AppText(duration.label),
-                  selected: draft.duration == duration,
-                  onSelected: (_) => controller.setDuration(duration),
+
+          // Duration Card Container
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: WarmEmpathyColors.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: WarmEmpathyColors.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x06000000),
+                  offset: Offset(0, 2),
+                  blurRadius: 6,
                 ),
-            ],
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.timer_outlined,
+                      color: WarmEmpathyColors.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      'Estimated Care Duration',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: WarmEmpathyColors.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 2.8,
+                  children: [
+                    for (final duration in VisitDuration.values)
+                      InkWell(
+                        onTap: () => controller.setDuration(duration),
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: draft.duration == duration
+                                ? WarmEmpathyColors.primary
+                                : WarmEmpathyColors.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: draft.duration == duration
+                                ? const [
+                                    BoxShadow(
+                                      color: Color(0x18000000),
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              duration.label,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: draft.duration == duration
+                                    ? WarmEmpathyColors.onPrimary
+                                    : WarmEmpathyColors.onSurface,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
