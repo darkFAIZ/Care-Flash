@@ -1,0 +1,12 @@
+.git
+.dart_tool
+.idea
+.agents
+.claude
+apps
+docs
+**/build
+**/coverage
+packages/care_backend/test
+packages/care_core
+pubspec.lock

@@ -26,7 +26,7 @@ The platform coordinates reports to support and configured emergency-response se
 | Term | Meaning |
 |---|---|
 | Care seeker | User requesting help through Care-Flash |
-| Caregiver | Verified student providing help through Care-Merchant |
+| Caregiver | Identity-verified person providing help through Care-Merchant |
 | Booking | A paid care request accepted by a caregiver |
 | Client verification code | Booking-specific secret presented by the care seeker at arrival |
 | Request reference | Non-secret request identifier visible to the caregiver before acceptance |
@@ -113,7 +113,7 @@ Requirements are marked P1 for the MVP or P2 for a later release. Priorities sho
 #### 3.2.1 Accounts, profiles, and matching
 
 - FR-P-1 The platform shall maintain separate care seeker and caregiver roles and authorize requests accordingly. (P1)
-- FR-P-2 The platform shall unlock caregiver request access only after required student identity/background checks and safety training are complete. (P1)
+- FR-P-2 The platform shall unlock caregiver request access only after required caregiver identity/background checks and safety training are complete. (P1)
 - FR-P-3 The platform shall maintain caregiver gender and use it only to apply the care seeker's selected male, female, or both filter. (P1)
 - FR-P-4 The platform shall match requests to nearby available verified caregivers whose gender matches the selected filter. (P1)
 - FR-P-5 If no matching caregiver is available, the platform shall return a no-match result and support filter changes or cancellation. (P1)
@@ -124,8 +124,8 @@ Requirements are marked P1 for the MVP or P2 for a later release. Priorities sho
 - FR-P-7 Before caregiver acceptance, the platform shall send Care-Merchant a non-secret request reference and request details, but shall not expose the care seeker's location or client verification code. (P1)
 - FR-P-8 After caregiver acceptance, the platform shall disclose the care seeker's destination only as required to arrange and complete the accepted trip/session. (P1)
 - FR-P-9 The platform shall calculate caregiver service price at IDR 25,000 per 30 minutes. (P1)
-- FR-P-10 The platform shall calculate the platform service fee as 5 percent of caregiver service price and obtain the applicable estimated Grab fare separately. (P1)
-- FR-P-11 Before payment, the platform shall return the itemized caregiver service price, platform service fee, Grab fare, and total to Care-Flash. A 1-hour visit with a Grab fare of IDR 9,000 shall total IDR 61,500: IDR 50,000 + IDR 2,500 + IDR 9,000. (P1)
+- FR-P-10 The platform shall calculate the platform service fee as 5 percent of caregiver service price and obtain the applicable estimated Grab fare separately. The care seeker pays the Grab fare as part of the total; the caregiver never pays for the ride. (P1)
+- FR-P-11 Before payment, the platform shall return the itemized caregiver service price, platform service fee, Grab fare, and total to Care-Flash. A 1-hour visit with a Grab fare of IDR 9,000 shall total IDR 61,500: IDR 50,000 + IDR 2,500 + IDR 9,000. The care seeker is charged this whole total, so the Grab fare is paid by the care seeker at payment time. (P1)
 - FR-P-12 After successful payment, the platform shall create a paid pending request; after a caregiver accepts, it shall set the booking to confirmed and notify both apps. (P1)
 - FR-P-13 The platform shall offer a declined or timed-out request to another eligible caregiver. If no caregiver accepts, the platform shall cancel the booking and initiate the configured care seeker refund. (P1)
 - FR-P-14 After caregiver acceptance, the platform shall arrange the Grab pickup and synchronize ride status with both apps. (P1)
@@ -134,8 +134,8 @@ Requirements are marked P1 for the MVP or P2 for a later release. Priorities sho
 #### 3.2.3 Arrival verification and session management
 
 - FR-P-16 The platform shall validate the client verification code submitted by the caregiver against the accepted booking. (P1)
-- FR-P-17 After valid client-code verification, the platform shall authorize generation/activation of a booking-linked safety-button QR/NFC identifier. (P1)
-- FR-P-18 The platform shall start a session only after valid client-code verification, valid safety-button QR/NFC verification by Care-Flash, and confirmation that the button has been handed to the care seeker. (P1)
+- FR-P-17 After valid client-code verification, the platform shall authorize generation/activation of a booking-linked safety-button QR/NFC identifier. The generated identifier is verified by the care seeker's device in Care-Flash, not by the caregiver's device. (P1)
+- FR-P-18 The platform shall start a session only after valid client-code verification, valid safety-button QR/NFC verification by Care-Flash, and confirmation that the button has been handed to the care seeker. The safety-button code is verified by the care seeker who scans or reads it in Care-Flash, and the platform accepts it only once. (P1)
 - FR-P-19 If either verification fails, the platform shall automatically record the failed verification, notify support, cancel the booking, and block session start. (P1)
 - FR-P-20 The platform shall maintain session state and make the boundary checklist and timer state available to Care-Merchant. (P1)
 - FR-P-21 On normal completion, the platform shall close the session, release caregiver service earnings, settle applicable platform and ride amounts, and make the completed booking available for ratings. (P1)
