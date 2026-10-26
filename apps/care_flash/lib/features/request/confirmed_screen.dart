@@ -2,7 +2,6 @@ import 'package:care_core/care_core.dart';
 import 'package:care_ui/care_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,9 +9,9 @@ import '../../core/date_time_format.dart';
 import '../../core/providers.dart';
 import '../demo/demo_controls_sheet.dart';
 import '../home/home_shell.dart';
+import 'caregiver_code_screen.dart';
 
-/// Booking status after payment, together with the private client code the care
-/// seeker shows on arrival. (FR-CS-12, FR-CS-21)
+/// Booking status and arrival verification for the care seeker.
 class ConfirmedScreen extends ConsumerWidget {
   const ConfirmedScreen({super.key});
 
@@ -51,10 +50,6 @@ class ConfirmedScreen extends ConsumerWidget {
         padding: AppSpacing.page,
         children: [
           _StatusHeader(booking: booking),
-          if (booking.hasClientCode) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _ClientCodeCard(code: booking.clientCode!),
-          ],
           if (booking.caregiver != null) ...[
             const SizedBox(height: AppSpacing.lg),
             _CaregiverRow(caregiver: booking.caregiver!),
@@ -80,7 +75,15 @@ class ConfirmedScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (booking.canVerifyButton) ...[
+              if (booking.status == BookingStatus.arrived) ...[
+                AppButton(
+                  label: 'Confirm caregiver identity',
+                  icon: Icons.verified_user_outlined,
+                  onPressed: () => context.push(CaregiverCodeScreen.route),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              if (booking.status == BookingStatus.codeVerified) ...[
                 AppButton(
                   label: 'Verify safety button',
                   icon: Icons.qr_code_scanner_rounded,
@@ -161,62 +164,6 @@ class _StatusHeader extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ClientCodeCard extends StatelessWidget {
-  const _ClientCodeCard({required this.code});
-
-  final String code;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AppCard(
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(Icons.pin_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: AppSpacing.sm),
-              AppText('Your client code', style: theme.textTheme.titleMedium),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppText(
-            code,
-            style: theme.textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 6,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AppText(
-            'Your caregiver types this code into Care-Merchant to verify you. '
-            'Do not share it before they arrive; you generate it, not them.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: code));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: AppText('Client code copied')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.copy_rounded, size: 20),
-              label: const AppText('Copy'),
-            ),
-          ),
-        ],
       ),
     );
   }

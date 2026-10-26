@@ -540,31 +540,31 @@ class _OnboardingCard extends StatelessWidget {
 
     final (title, body, route, cta) = switch (status) {
       VerificationStatus.notSubmitted => (
-          'Verify your account',
-          'Submit your KTP so a care seeker can trust who arrives. '
-              'You also need the safety badge before requests arrive.',
-          OnboardingScreen.route,
-          'Start verification',
-        ),
+        'Verify your account',
+        'Submit your Residential ID so a care seeker can trust who arrives. '
+            'You also need the safety badge before requests arrive.',
+        OnboardingScreen.route,
+        'Start verification',
+      ),
       VerificationStatus.pending => (
-          'Verification in review',
-          'Your KTP is being reviewed. Complete the safety module while '
-              'you wait.',
-          SafetyModuleScreen.route,
-          'Open the safety module',
-        ),
+        'Verification in review',
+        'Your Residential ID is being reviewed. Complete the safety module while '
+            'you wait.',
+        SafetyModuleScreen.route,
+        'Open the safety module',
+      ),
       VerificationStatus.rejected => (
-          'Verification needs attention',
-          caregiver.rejectionReason ?? 'Your submission was not accepted.',
-          OnboardingScreen.route,
-          'Resubmit your KTP',
-        ),
+        'Verification needs attention',
+        caregiver.rejectionReason ?? 'Your submission was not accepted.',
+        OnboardingScreen.route,
+        'Resubmit your Residential ID',
+      ),
       VerificationStatus.approved => (
-          'Get your safety badge',
-          'Complete the safety module to start receiving requests.',
-          SafetyModuleScreen.route,
-          'Open the safety module',
-        ),
+        'Get your safety badge',
+        'Complete the safety module to start receiving requests.',
+        SafetyModuleScreen.route,
+        'Open the safety module',
+      ),
     };
 
     return Container(
@@ -1202,7 +1202,7 @@ class _ActiveBookingCard extends StatelessWidget {
           ),
           Text(
             booking.location.label,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),

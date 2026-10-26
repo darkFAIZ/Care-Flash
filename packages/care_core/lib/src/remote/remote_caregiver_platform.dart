@@ -193,11 +193,13 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
 
   @override
   Future<void> submitVerification({
-    required String ktpNumber,
+    required String residentialIdNumber,
     required String documentLabel,
   }) =>
       _callVoid('submitVerification', {
-        'ktpNumber': ktpNumber,
+        // The demo backend validates the submission but intentionally does
+        // not retain identity numbers or document labels.
+        'residentialIdNumber': residentialIdNumber,
         'documentLabel': documentLabel,
       });
 
@@ -310,6 +312,9 @@ class RemoteCaregiverPlatform implements CaregiverPlatform {
 
   @override
   void simulateCareSeekerCancel() {}
+
+  @override
+  void simulateCareSeekerCodeConfirmation({bool valid = true}) {}
 
   @override
   void simulateCareSeekerButtonScan({

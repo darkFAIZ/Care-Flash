@@ -26,7 +26,7 @@ The platform coordinates reports to support and configured emergency-response se
 | Term | Meaning |
 |---|---|
 | Care seeker | User requesting help through Care-Flash |
-| Caregiver | Verified student providing help through Care-Merchant |
+| Caregiver | Identity-verified person providing help through Care-Merchant |
 | Booking | A paid care request accepted by a caregiver |
 | Client verification code | Booking-specific secret presented by the care seeker at arrival |
 | Request reference | Non-secret request identifier visible to the caregiver before acceptance |
@@ -113,7 +113,7 @@ Requirements are marked P1 for the MVP or P2 for a later release. Priorities sho
 #### 3.2.1 Accounts, profiles, and matching
 
 - FR-P-1 The platform shall maintain separate care seeker and caregiver roles and authorize requests accordingly. (P1)
-- FR-P-2 The platform shall unlock caregiver request access only after required student identity/background checks and safety training are complete. (P1)
+- FR-P-2 The platform shall unlock caregiver request access only after required caregiver identity/background checks and safety training are complete. (P1)
 - FR-P-3 The platform shall maintain caregiver gender and use it only to apply the care seeker's selected male, female, or both filter. (P1)
 - FR-P-4 The platform shall match requests to nearby available verified caregivers whose gender matches the selected filter. (P1)
 - FR-P-5 If no matching caregiver is available, the platform shall return a no-match result and support filter changes or cancellation. (P1)

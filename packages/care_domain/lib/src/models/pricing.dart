@@ -22,6 +22,9 @@ class PriceBreakdown {
   /// care seeker pays at payment time, before any caregiver accepts. (FR-P-11)
   int get total => caregiverPrice + platformFee + grabFare;
 
+  /// In-app service amount, excluding the separately arranged Grab ride.
+  int get serviceTotal => caregiverPrice + platformFee;
+
   /// The caregiver's share only: the service price. The platform keeps
   /// [platformFee] and passes [grabFare] through to Grab, so neither is
   /// earnings. (FR-P-21)

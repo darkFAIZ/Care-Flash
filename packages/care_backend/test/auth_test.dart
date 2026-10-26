@@ -183,7 +183,7 @@ void main() {
       expect(restored.resumeSession(token), isNull);
     });
 
-    test('the KTP number must be 16 digits', () {
+    test('the Residential ID number must be 16 digits', () {
       final state = CareBackendState();
       final id = (state.caregiverSignUp(
         name: 'Ayu',
@@ -195,15 +195,15 @@ void main() {
       expect(
         () => state.submitVerification(
           id,
-          ktpNumber: '123',
-          documentLabel: 'KTP',
+          residentialIdNumber: '123',
+          documentLabel: 'Residential ID',
         ),
         throwsStateError,
       );
       state.submitVerification(
         id,
-        ktpNumber: '3174012501990001',
-        documentLabel: 'KTP',
+        residentialIdNumber: '3174012501990001',
+        documentLabel: 'Residential ID',
       );
       expect(
         CaregiverAccount.fromJson(

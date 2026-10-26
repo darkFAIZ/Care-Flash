@@ -44,29 +44,45 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       _error = null;
     });
     final platform = ref.read(platformProvider);
-    await platform.rateCaregiver(
-      CaregiverRating(
-        bookingId: booking.id,
-        caregiverId: caregiver.id,
-        stars: _caregiverStars,
-        comment: _caregiverComment.text.trim().isEmpty
-            ? null
-            : _caregiverComment.text.trim(),
-      ),
-    );
-    await platform.submitAppFeedback(
-      AppFeedback(
-        stars: _appStars,
-        comment: _appComment.text.trim().isEmpty
-            ? null
-            : _appComment.text.trim(),
-      ),
-    );
-    if (!mounted) {
-      return;
+    var submitted = false;
+    try {
+      await platform.rateCaregiver(
+        CaregiverRating(
+          bookingId: booking.id,
+          caregiverId: caregiver.id,
+          stars: _caregiverStars,
+          comment: _caregiverComment.text.trim().isEmpty
+              ? null
+              : _caregiverComment.text.trim(),
+        ),
+      );
+      await platform.submitAppFeedback(
+        AppFeedback(
+          stars: _appStars,
+          comment: _appComment.text.trim().isEmpty
+              ? null
+              : _appComment.text.trim(),
+        ),
+      );
+      submitted = true;
+    } catch (error, stackTrace) {
+      debugPrint('Failed to submit post-session feedback: $error\n$stackTrace');
+      if (mounted) {
+        setState(
+          () => _error = trText(
+            context,
+            'We could not submit your feedback. Please check your connection and try again.',
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
-    setState(() => _busy = false);
-    context.go(HomeShell.route);
+    if (submitted && mounted) {
+      context.go(HomeShell.route);
+    }
   }
 
   @override
@@ -116,7 +132,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
-              hintText: trText(context, 'Leave a note about the visit (optional)'),
+              hintText: trText(
+                context,
+                'Leave a note about the visit (optional)',
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -141,15 +160,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               hintText: trText(context, 'Tell us what to improve (optional)'),
             ),
           ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            AppText(
-              _error!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppSemanticColors.of(context).danger,
-              ),
-            ),
-          ],
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -161,11 +171,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             AppSpacing.pageGutter,
             AppSpacing.lg,
           ),
-          child: AppButton(
-            label: 'Submit',
-            loading: _busy,
-            onPressed:
-                _busy ? null : () => _submit(booking, caregiver),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_error != null) ...[
+                AppText(
+                  _error!,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppSemanticColors.of(context).danger,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              AppButton(
+                label: 'Submit',
+                loading: _busy,
+                onPressed: _busy ? null : () => _submit(booking, caregiver),
+              ),
+            ],
           ),
         ),
       ),

@@ -108,8 +108,8 @@ class Booking {
   /// (FR-P-21, FR-P-22, FR-P-24)
   final int? caregiverPayout;
 
-  /// Private client verification code, generated after payment and shown only to
-  /// the care seeker until presented at arrival. (FR-CS-12, FR-P-15)
+  /// Private caregiver identity code, generated after payment and shown only to
+  /// the caregiver at arrival; the care seeker confirms it in Care-Flash.
   final String? clientCode;
 
   final BookingStatus status;

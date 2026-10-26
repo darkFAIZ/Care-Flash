@@ -25,7 +25,7 @@ The system does not provide medical treatment, diagnosis, or emergency medical s
 | Term | Meaning |
 |---|---|
 | Care seeker | User requesting help through Care-Flash |
-| Caregiver | Verified student providing the requested service through Care-Merchant |
+| Caregiver | Identity-verified person providing the requested service through Care-Merchant |
 | Boundary checklist | Tasks the care seeker allows or does not allow during the visit |
 | Client verification code | Booking-specific code presented by the care seeker to the caregiver at arrival |
 | Safety button | Physical device handed to the care seeker, with a booking-linked QR code/NFC tag and physical report button |

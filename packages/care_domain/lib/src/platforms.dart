@@ -24,9 +24,7 @@ abstract interface class CareSeekerPlatform
 /// (AGENTS.md §5)
 abstract interface class CaregiverPlatform
     implements CaregiverRepository, CaregiverDemoControls {
-  /// The client code of the booking currently offered to this caregiver, if
-  /// any. Debug-only convenience so the Demo Controls sheet and the client-code
-  /// screen can present the code without a real care seeker reading it off a
-  /// screen. (FR-CM-13)
+  /// The caregiver's verification code for the current booking, if any.
+  /// Debug-only convenience used by Demo Controls. (FR-CM-13)
   String? get debugClientCode;
 }

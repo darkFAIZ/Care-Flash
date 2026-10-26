@@ -91,8 +91,8 @@ void main() {
     final caregiverId = caregiverAuth.user!.id;
 
     await caregiver.submitVerification(
-      ktpNumber: '3174012501990001',
-      documentLabel: 'KTP',
+      residentialIdNumber: '3174012501990001',
+      documentLabel: 'Residential ID',
     );
     await caregiver.completeSafetyModule();
     await caregiver.updateAvailability(CaregiverAvailability.available);

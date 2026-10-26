@@ -42,9 +42,9 @@ abstract interface class CaregiverRepository {
   /// `data:image/...;base64,...` string, or null to remove the photo.
   Future<void> updateAvatar({String? avatarDataUrl});
 
-  /// Submits KTP identity details for platform review. (FR-CM-2)
+  /// Submits Residential ID identity details for platform review. (FR-CM-2)
   Future<void> submitVerification({
-    required String ktpNumber,
+    required String residentialIdNumber,
     required String documentLabel,
   });
 
@@ -146,6 +146,9 @@ abstract interface class CaregiverDemoControls {
   /// Simulates the care seeker cancelling the booking, which notifies the
   /// caregiver. (FR-CM-12)
   void simulateCareSeekerCancel();
+
+  /// Simulates the seeker confirming the caregiver's arrival code in Care-Flash.
+  void simulateCareSeekerCodeConfirmation({bool valid = true});
 
   /// Simulates the care seeker scanning or reading the safety button the
   /// caregiver handed over. The prototype has no camera or NFC reader.

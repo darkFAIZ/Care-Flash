@@ -7,8 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('the earnings tab shows the balance and a completed session',
-      (tester) async {
+  testWidgets('the earnings tab shows the balance and a completed session', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1200, 4200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

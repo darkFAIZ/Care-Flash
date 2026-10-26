@@ -22,7 +22,7 @@ Care-Merchant is a Flutter mobile app that communicates with the shared platform
 
 | Term | Meaning |
 |---|---|
-| Caregiver | Verified student using Care-Merchant to provide help |
+| Caregiver | Identity-verified person using Care-Merchant to provide help |
 | Care seeker | User requesting help through Care-Flash |
 | Request reference | Non-secret identifier for an incoming request |
 | Client verification code | Booking-specific code the care seeker presents at arrival |
@@ -48,7 +48,7 @@ Care-Merchant is one of two Flutter mobile applications connected to the shared 
 
 ### 2.2 Product functions
 
-- Create an account, submit student identity information, and complete caregiver verification.
+- Create an account, submit caregiver identity information, and complete caregiver verification.
 - Complete safety training and manage availability.
 - Receive request details without care seeker location or private verification code before acceptance.
 - Accept or decline requests without rating penalty for declining.
@@ -60,7 +60,7 @@ Care-Merchant is one of two Flutter mobile applications connected to the shared 
 
 ### 2.3 User characteristics
 
-Caregivers are verified university students who need clear request details, privacy safeguards, safety controls, and transparent earnings.
+Caregivers are verified caregivers who need clear request details, privacy safeguards, safety controls, and transparent earnings.
 
 ### 2.4 Constraints
 
@@ -98,7 +98,7 @@ Requirements are marked P1 for the MVP or P2 for a later release. Priorities sho
 #### 3.2.1 Caregiver account and onboarding
 
 - FR-CM-1 The app shall let a caregiver create an account and log in. (P1)
-- FR-CM-2 The app shall let a caregiver submit student identification and required verification information. (P1)
+- FR-CM-2 The app shall let a caregiver submit residential identity and required verification information. (P1)
 - FR-CM-3 The app shall show verification status and explain rejection reasons; where resubmission is allowed, the app shall provide a resubmission path. (P1)
 - FR-CM-4 The app shall provide the required safety module and show the safety badge after successful completion. (P1)
 - FR-CM-5 The app shall let the caregiver record their gender for the care seeker's matching filter. (P1)

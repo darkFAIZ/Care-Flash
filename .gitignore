@@ -35,6 +35,7 @@ build/
 **/build/
 coverage/
 **/coverage/
+packages/care_backend/data/
 
 # Melos
 .melos_tool/

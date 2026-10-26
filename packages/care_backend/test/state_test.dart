@@ -16,8 +16,8 @@ void main() {
     final id = (auth['user'] as Map<String, Object?>)['id']! as String;
     state.submitVerification(
       id,
-      ktpNumber: '3174012501990001',
-      documentLabel: 'KTP',
+      residentialIdNumber: '3174012501990001',
+      documentLabel: 'Residential ID',
     );
     state.completeSafetyModule(id);
     state.updateAvailability(id, CaregiverAvailability.available);
@@ -173,12 +173,12 @@ void main() {
     );
     expect(fresh.verificationStatus, VerificationStatus.notSubmitted);
 
-    // Submitting the KTP is auto-approved by the demo backend, so the
+    // Submitting the Residential ID is auto-approved by the demo backend, so the
     // caregiver is never left stuck "under review".
     state.submitVerification(
       caregiverId,
-      ktpNumber: '3174012501990001',
-      documentLabel: 'KTP',
+      residentialIdNumber: '3174012501990001',
+      documentLabel: 'Residential ID',
     );
     final after = CaregiverAccount.fromJson(
       state.caregiverSnapshot(caregiverId)['currentCaregiver']! as Map<String, Object?>,

@@ -202,7 +202,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
           () => _run(ref.read(platformProvider).markArrived),
         ),
       BookingStatus.arrived => (
-          'Verify the client code',
+          'Share your caregiver code',
           () => context.push(ClientCodeScreen.route),
         ),
       BookingStatus.codeVerified => (
@@ -231,7 +231,7 @@ class _ClientCodeDebug extends StatelessWidget {
       color: theme.colorScheme.tertiaryContainer,
       child: ListTile(
         leading: const Icon(Icons.bug_report_outlined),
-        title: const AppText('Demo: the care seeker\'s client code'),
+        title: const AppText('Demo: caregiver verification code'),
         trailing: AppText(
           clientCode,
           style: theme.textTheme.titleMedium,

@@ -43,7 +43,7 @@ abstract final class Pricing {
   /// because the team has not confirmed them.
   static int earlyEndCompensation(PriceBreakdown price) {
     final base = switch (PlatformPolicy.earlyEndCompensationBase) {
-      EarlyEndCompensationBase.quotedTotal => price.total,
+      EarlyEndCompensationBase.quotedTotal => price.serviceTotal,
       EarlyEndCompensationBase.caregiverServicePrice => price.caregiverPrice,
     };
     return (base * PlatformPolicy.earlyEndCompensationRate).round();
@@ -70,5 +70,5 @@ abstract final class Pricing {
   /// TODO(team): confirm how the fee and Grab fare are treated.
   /// (FR-P-22, SRS open decision 3)
   static int earlyEndRefund(PriceBreakdown price) =>
-      price.total - earlyEndCompensation(price);
+      price.serviceTotal - earlyEndCompensation(price);
 }

@@ -15,8 +15,9 @@ import 'backend_client.dart';
 class RemoteCarePlatform implements CareSeekerPlatform {
   RemoteCarePlatform(this._client) {
     _subscription = _client.snapshots.listen(_applySnapshot);
-    _reconnectSubscription =
-        _client.reconnected.listen((_) => _restoreSession());
+    _reconnectSubscription = _client.reconnected.listen(
+      (_) => _restoreSession(),
+    );
   }
 
   final CareBackendClient _client;
@@ -108,15 +109,17 @@ class RemoteCarePlatform implements CareSeekerPlatform {
     required String name,
     required String email,
     required String password,
-  }) =>
-      _authenticate('seekerSignUp', {'name': name, 'email': email, 'password': password});
+  }) => _authenticate('seekerSignUp', {
+    'name': name,
+    'email': email,
+    'password': password,
+  });
 
   @override
   Future<AuthResult> signIn({
     required String email,
     required String password,
-  }) =>
-      _authenticate('seekerSignIn', {'email': email, 'password': password});
+  }) => _authenticate('seekerSignIn', {'email': email, 'password': password});
 
   Future<AuthResult> _authenticate(String op, Map<String, Object?> args) async {
     final result = await _call(op, args);
@@ -193,8 +196,22 @@ class RemoteCarePlatform implements CareSeekerPlatform {
   }
 
   @override
+  Future<Booking> findAnotherCaregiver() async {
+    final json = await _call('findAnotherCaregiver');
+    return Booking.fromJson(json);
+  }
+
+  @override
   Future<void> cancelBooking(CancellationReason reason) =>
       _callVoid('cancelBooking', {'reason': reason.name});
+
+  @override
+  Future<ButtonVerificationResult> verifyCaregiverCode(String code) async {
+    final json = await _call('verifyCaregiverCode', {'code': code});
+    return json['success'] == true
+        ? const ButtonVerificationResult.success()
+        : ButtonVerificationResult.failed(json['message'] as String?);
+  }
 
   @override
   Future<ButtonVerificationResult> verifySafetyButton(
@@ -236,7 +253,10 @@ class RemoteCarePlatform implements CareSeekerPlatform {
     required String bookingId,
     required PaymentMethod method,
   }) async {
-    final json = await _call('pay', {'bookingId': bookingId, 'method': method.type.name});
+    final json = await _call('pay', {
+      'bookingId': bookingId,
+      'method': method.type.name,
+    });
     return json['success'] == true
         ? const PaymentResult.succeeded()
         : PaymentResult.failed(json['message'] as String?);
@@ -277,6 +297,22 @@ class RemoteCarePlatform implements CareSeekerPlatform {
   }) {}
 
   @override
+  Future<ButtonVerificationResult> simulateButtonScanResult({
+    ButtonVerificationMethod method = ButtonVerificationMethod.qr,
+  }) async {
+    final booking = activeBooking;
+    final payload = booking?.safetyButtonId;
+    if (payload == null) {
+      return const ButtonVerificationResult.failed(
+        'The backend does not provide a safety token for simulation.',
+      );
+    }
+    return verifySafetyButton(
+      ButtonVerification(method: method, payload: payload),
+    );
+  }
+
+  @override
   void simulateButtonPress() {}
 
   @override
@@ -285,10 +321,12 @@ class RemoteCarePlatform implements CareSeekerPlatform {
   Future<Map<String, Object?>> _call(
     String op, [
     Map<String, Object?> args = const {},
-  ]) async =>
-      await _client.call(op, args) as Map<String, Object?>;
+  ]) async => await _client.call(op, args) as Map<String, Object?>;
 
-  Future<void> _callVoid(String op, [Map<String, Object?> args = const {}]) async {
+  Future<void> _callVoid(
+    String op, [
+    Map<String, Object?> args = const {},
+  ]) async {
     await _client.call(op, args);
   }
 }

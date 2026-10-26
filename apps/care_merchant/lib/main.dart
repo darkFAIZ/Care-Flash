@@ -2,33 +2,70 @@ import 'package:care_core/care_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/providers.dart';
+import 'core/theme.dart';
 
-/// The shared demo backend to connect to, or empty to run fully offline.
-///
-/// Passed at build time:
-/// `flutter run -d edge --dart-define=BACKEND_URL=ws://localhost:8080`.
-/// When set, Care-Merchant uses the real platform over WebSocket so the
-/// requests a care seeker submits from Care-Flash arrive here live; otherwise it
-/// falls back to the mock.
-const String _backendUrl = String.fromEnvironment('BACKEND_URL');
+const String _supabaseUrl = String.fromEnvironment(
+  'SUPABASE_URL',
+  defaultValue: 'https://aqdbcytptkwcjuyglffz.supabase.co',
+);
+const String _supabaseKey = String.fromEnvironment(
+  'SUPABASE_PUBLISHABLE_KEY',
+  defaultValue: 'sb_publishable_NSNNC6JanSLV4LXIBc213A_eosl8rZG',
+);
+const bool _offlineMode = String.fromEnvironment('BACKEND_URL') == 'mock';
+bool _supabaseInitialized = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Plus Jakarta Sans ships with the app (packages/care_ui assets), so no
-  // screen ever waits on a font download during the demo.
   GoogleFonts.config.allowRuntimeFetching = false;
   await loadPreferences();
-  final CaregiverPlatform platform;
-  if (_backendUrl.isEmpty) {
-    platform = await MockCaregiverPlatform.create();
-  } else {
-    final remote = RemoteCaregiverPlatform(CareBackendClient(_backendUrl));
-    await remote.connect();
-    platform = remote;
+  await _startApp();
+}
+
+Future<void> _startApp() async {
+  try {
+    if (_offlineMode) {
+      await _startOffline();
+      return;
+    }
+    if (_supabaseKey.isEmpty) {
+      throw StateError('SUPABASE_PUBLISHABLE_KEY is missing. Pass it with --dart-define when running or building the app.');
+    }
+    if (!_supabaseInitialized) {
+      await Supabase.initialize(url: _supabaseUrl, publishableKey: _supabaseKey);
+      _supabaseInitialized = true;
+    }
+    final platform = SupabaseCaregiverPlatform(Supabase.instance.client);
+    await platform.initialize();
+    runApp(
+      ProviderScope(
+        overrides: [platformProvider.overrideWithValue(platform)],
+        child: const CareMerchantApp(),
+      ),
+    );
+  } catch (error) {
+    runApp(
+      MaterialApp(
+        title: 'Care-Merchant',
+        theme: CareMerchantTheme.light(),
+        darkTheme: CareMerchantTheme.dark(),
+        home: SupabaseConnectionScreen(
+          appName: 'Care-Merchant',
+          error: error.toString(),
+          onRetry: _startApp,
+          onUseOffline: _startOffline,
+        ),
+      ),
+    );
   }
+}
+
+Future<void> _startOffline() async {
+  final platform = await MockCaregiverPlatform.create();
   runApp(
     ProviderScope(
       overrides: [platformProvider.overrideWithValue(platform)],

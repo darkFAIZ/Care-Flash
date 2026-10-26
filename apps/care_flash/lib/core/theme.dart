@@ -205,8 +205,6 @@ abstract final class CareFlashTheme {
     );
   }
 
-  static ThemeData dark({AppAccent? accent}) => AppThemes.careFlash(
-        brightness: Brightness.dark,
-        accent: accent,
-      );
+  static ThemeData dark({AppAccent? accent}) =>
+      AppThemes.careFlash(brightness: Brightness.dark, accent: accent);
 }

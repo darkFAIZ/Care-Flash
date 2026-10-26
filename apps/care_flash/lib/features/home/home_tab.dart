@@ -196,6 +196,52 @@ class HomeTab extends ConsumerWidget {
                   onTap: () => context.push(HelpSupportScreen.route),
                 ),
               ),
+              const SizedBox(height: AppSpacing.lg),
+              _NeedHelpCard(
+                onTap: () {
+                  if (booking != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: AppText(
+                          'You already have an ongoing request.',
+                        ),
+                      ),
+                    );
+                    context.push(_ongoingRoute(booking));
+                    return;
+                  }
+                  ref.read(requestDraftProvider.notifier).reset();
+                  context.push(HelpRequestScreen.route);
+                },
+              ),
+              if (booking != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                const SectionHeader(title: 'Ongoing activity'),
+                const SizedBox(height: AppSpacing.xs),
+                _OngoingActivityCard(booking: booking),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              const SectionHeader(title: 'Quick actions'),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.credit_card_rounded,
+                      label: 'Payment info',
+                      onTap: () => context.push(PaymentInfoScreen.route),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.support_agent_rounded,
+                      label: 'Help & support',
+                      onTap: () => context.push(HelpSupportScreen.route),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
 

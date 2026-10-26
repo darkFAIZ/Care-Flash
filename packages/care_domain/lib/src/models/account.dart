@@ -78,7 +78,7 @@ class Caregiver {
   final double rating;
   final int reviewCount;
 
-  /// True when the platform verified the caregiver's KTP identity. (FR-P-2)
+  /// True when the platform verified the caregiver's Residential ID identity. (FR-P-2)
   final bool identityVerified;
 
   /// True after the caregiver completed the safety module. (FR-P-2, FR-CM-4)
@@ -135,7 +135,7 @@ class Caregiver {
         gender: Gender.values.byName(json['gender']! as String),
         rating: (json['rating'] as num?)?.toDouble() ?? 0,
         reviewCount: json['reviewCount'] as int? ?? 0,
-        // `studentVerified` is the pre-KTP key, kept so saved demo data loads.
+        // `studentVerified` is the pre-Residential ID key, kept so saved demo data loads.
         identityVerified: json['identityVerified'] as bool? ??
             json['studentVerified'] as bool? ??
             true,

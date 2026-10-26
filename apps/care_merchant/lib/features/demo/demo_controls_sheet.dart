@@ -94,9 +94,7 @@ class _DemoControlsSheetState extends ConsumerState<_DemoControlsSheet> {
                 _action('Cancel booking', platform.simulateCareSeekerCancel),
                 _action(
                   'Present client code',
-                  () => unawaited(
-                    platform.verifyClientCode(platform.debugClientCode ?? ''),
-                  ),
+                  () => platform.simulateCareSeekerCodeConfirmation(valid: true),
                 ),
                 _action(
                   'Care seeker scans the button',

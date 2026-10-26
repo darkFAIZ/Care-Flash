@@ -1,0 +1,156 @@
+{
+  "title": "Choose the visual world",
+  "question": "The roll assigned Woven Care Paths. Keep it, choose an alternate, or ask for another hand.",
+  "options": [
+    {
+      "id": "assigned",
+      "kind": "assigned",
+      "label": "Woven Care Paths",
+      "kicker": "THE ROLL",
+      "lineage": "Indonesian handwoven tenun and ikat",
+      "thesis": "Two care journeys interlace into one clear, dependable service.",
+      "palette": ["#143C43", "#0B272E", "#F5F0E4", "#B8D99B", "#E58A63"],
+      "materials": ["woven warp-and-weft lines", "matte indigo cloth", "uncoated ivory"],
+      "viewport": "A calm Care-Flash home shows one confident request action, the active visit, and a fine two-strand progress stitch; Care-Merchant carries the same weave grammar in a request-first work surface.",
+      "risk": "Can feel like a craft store if weave marks spread beyond purposeful status paths.",
+      "raised": [
+        {
+          "from": "ikeda-datamatics",
+          "raise": "Use crisp light-dark contrast for every task and status; no ornamental low-contrast field."
+        },
+        {
+          "from": "japanese-high-density-web",
+          "raise": "Keep each screen to its next useful decision and the information that supports it."
+        },
+        {
+          "from": "notation-diagram-systems-labanotation",
+          "raise": "Make session duration and elapsed-time changes exact and legible, never decorative motion."
+        },
+        {
+          "from": "pop-culture-shelf-vertical-video-feed-surface",
+          "raise": "Give each screen one unmistakable primary action while keeping standard app navigation familiar."
+        }
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "model-pick",
+      "kind": "pick",
+      "label": "The Clinic Visit Card",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Puskesmas queue tickets and visit cards",
+      "thesis": "Every visit reads like a thoughtful, trusted care record.",
+      "palette": ["#F6F2E8", "#174D45", "#20332E", "#E7B24C", "#D7735B"],
+      "materials": ["warm record stock", "inked field labels", "small service stamps"],
+      "viewport": "A clear personal welcome leads into a sharply prioritized booking card with visit reference, caregiver, status, and one next step; the same record structure serves caregiver requests and session handoffs.",
+      "risk": "A familiar direction; without strong type and generous spacing it can look like a generic clinic form.",
+      "html": ".impeccable/mocks/decision/model-pick.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-transit",
+      "kind": "challenger",
+      "catalogId": "wayfinding-cartography-signage-midnight-transit-diagram",
+      "label": "Transfer-Line Wayfinding",
+      "verdict": "competitive",
+      "lineage": "Midnight transit diagrams and Indonesian station signage",
+      "thesis": "Follow a care request as a clear journey through its next station.",
+      "palette": ["#102D3B", "#F4F1E8", "#E56A52", "#63B9A7", "#E3B65C"],
+      "materials": ["enamel sign fields", "precise route strokes", "porcelain waypoints"],
+      "viewport": "A standard app shell leads to the booking, with a route-like status path showing matching, arrival, verification, and visit milestones; the merchant side uses the same states to make the next response obvious.",
+      "case": "Wins on journey clarity; ties on audience identification because transit is familiar but less specific to care.",
+      "risk": "Route colors could be mistaken for a literal map or imply unsupported live travel tracking.",
+      "html": ".impeccable/mocks/decision/challenger-transit.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-reference",
+      "kind": "challenger",
+      "catalogId": "rw-centre-rail-reference-setting",
+      "label": "The Care Reference Edition",
+      "verdict": "competitive",
+      "lineage": "Reference-setting books with a ruled annotation margin",
+      "thesis": "Important care details stay readable while context sits close at hand.",
+      "palette": ["#F1EBDD", "#23251F", "#9B3F31", "#D8CCB6"],
+      "materials": ["uncoated bone paper", "fine ink rules", "margin annotations"],
+      "viewport": "A familiar task-based app shell gives requests and visit details the leading column while references, safety notes, and history sit in a quiet supporting margin.",
+      "case": "Wins on dense-detail clarity; loses on audience identification because an editorial book is less native to everyday care.",
+      "risk": "Too many margin notes would crowd a phone and make care feel bureaucratic.",
+      "html": ".impeccable/mocks/decision/challenger-reference.html",
+      "htmlFrame": "390x844"
+    },
+    {
+      "id": "challenger-ikeda",
+      "kind": "challenger",
+      "catalogId": "ikeda-datamatics",
+      "label": "The Signal Field",
+      "verdict": "declined",
+      "lineage": "Data-sublime black-and-white barcode fields",
+      "palette": ["#050505", "#FFFFFF"],
+      "materials": ["pixel-crisp bars", "tabular numerics"],
+      "case": "Loses on both care-audience fit and product clarity; its useful contribution is decisive contrast.",
+      "kept": "Crisp contrast for task hierarchy and meaningful status.",
+      "risk": "A high-contrast signal aesthetic would overwhelm a calm care task."
+    },
+    {
+      "id": "challenger-dense",
+      "kind": "challenger",
+      "catalogId": "japanese-high-density-web",
+      "label": "The Compact Index",
+      "verdict": "declined",
+      "lineage": "High-density Japanese information pages",
+      "palette": ["#F8F8F5", "#17191A", "#D8453F", "#D9DDDA"],
+      "materials": ["ruled modules", "compact gothic type", "utility-red tabs"],
+      "case": "Loses on both spacious care confidence and mobile readability; its useful contribution is information economy.",
+      "kept": "Prioritize the next decision and remove nonessential content from each state.",
+      "risk": "Dense modules and tiny type would be tiring on a phone."
+    },
+    {
+      "id": "challenger-labanotation",
+      "kind": "challenger",
+      "catalogId": "notation-diagram-systems-labanotation",
+      "label": "The Session Score",
+      "verdict": "declined",
+      "lineage": "Labanotation movement scores",
+      "palette": ["#FBFAF6", "#20211E", "#D7DDD7"],
+      "materials": ["precise score marks", "vertical time staff", "shaded duration blocks"],
+      "case": "Loses on audience fit and request-task clarity; its useful contribution is exact timing.",
+      "kept": "Show visit duration and elapsed time as real, accessible information.",
+      "risk": "A movement notation would turn a care session into an abstract diagram."
+    },
+    {
+      "id": "challenger-feed",
+      "kind": "challenger",
+      "catalogId": "pop-culture-shelf-vertical-video-feed-surface",
+      "label": "The Full-Screen Story",
+      "verdict": "declined",
+      "lineage": "Full-bleed vertical media feeds",
+      "palette": ["#151515", "#FFFFFF"],
+      "materials": ["full-frame media", "anchored captions", "stacked actions"],
+      "case": "Loses on both trust and task efficiency; its useful contribution is a clear focal action.",
+      "kept": "One primary action per screen, with secondary choices visually quieter.",
+      "risk": "Immersive media framing would bury important booking information."
+    }
+  ],
+  "reroll": {
+    "registers": ["safer", "bolder"]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": false
+  },
+  "canon": true,
+  "canonCard": {
+    "kind": "canon",
+    "label": "The category standard",
+    "thesis": "A beautifully executed Material 3 care-services app.",
+    "palette": ["#F7F8F6", "#182427", "#147D78", "#E4EEEB"],
+    "materials": ["clean Material 3 surfaces", "precise icons", "quiet elevation"],
+    "viewport": "The usual greeting, booking card, primary action, and familiar navigation, all at a high standard of spacing and contrast.",
+    "risk": "Clear and dependable, but deliberately less distinctive.",
+    "html": ".impeccable/mocks/decision/canon.html",
+    "htmlFrame": "390x844"
+  },
+  "steer": true
+}

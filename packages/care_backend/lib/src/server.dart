@@ -183,6 +183,8 @@ class CareBackendServer {
       case 'retryWithGenderFilter':
         return state.retryWithGenderFilter(
             _seeker(conn), GenderFilter.values.byName(args['filter']! as String));
+      case 'findAnotherCaregiver':
+        return state.findAnotherCaregiver(_seeker(conn));
       case 'pay':
         return state.pay(
           _seeker(conn),
@@ -226,7 +228,7 @@ class CareBackendServer {
       case 'submitVerification':
         state.submitVerification(
           _caregiver(conn),
-          ktpNumber: args['ktpNumber']! as String,
+          residentialIdNumber: args['residentialIdNumber']! as String,
           documentLabel: args['documentLabel']! as String,
         );
         return null;

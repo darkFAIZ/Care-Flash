@@ -18,5 +18,8 @@ export 'src/mock/mock_caregiver_platform.dart';
 export 'src/mock/mock_data.dart';
 
 export 'src/remote/backend_client.dart';
+export 'src/remote/backend_connection_screen.dart';
 export 'src/remote/remote_care_platform.dart';
 export 'src/remote/remote_caregiver_platform.dart';
+export 'src/supabase/supabase_care_platform.dart';
+export 'src/supabase/supabase_connection_screen.dart';

@@ -7,11 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import 'verification_status_screen.dart';
 
-/// Submit KTP identification for platform review. (FR-CM-2)
+/// Submit Residential ID identification for platform review. (FR-CM-2)
 ///
-/// Documents are only transmitted through the platform's authorized services,
-/// so this screen collects a reference rather than a real file upload in the
-/// prototype. (DC-CM-3)
+/// The online prototype does not upload or store the ID number or document.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -23,14 +21,14 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _ktp = TextEditingController();
+  final _residentialId = TextEditingController();
   String? _documentLabel;
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
-    _ktp.dispose();
+    _residentialId.dispose();
     super.dispose();
   }
 
@@ -39,7 +37,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       return;
     }
     if (_documentLabel == null) {
-      setState(() => _error = 'Attach a photo of your KTP to continue.');
+      setState(() => _error = 'Attach an identity card photo to continue.');
       return;
     }
     setState(() {
@@ -47,7 +45,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       _error = null;
     });
     await ref.read(platformProvider).submitVerification(
-          ktpNumber: _ktp.text,
+          residentialIdNumber: _residentialId.text,
           documentLabel: _documentLabel!,
         );
     if (!mounted) {
@@ -74,21 +72,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppText(
-                      'Caregivers are verified with a KTP.',
+                      'Caregivers are verified with a Residential ID.',
                       style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     AppText(
-                      'We review your KTP before you can receive requests. '
-                      'This usually takes a short while.',
+                      'Submit your Residential ID for review. This demo only records '
+                      'the pending status; it does not upload or store your ID.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     AppTextField(
-                      controller: _ktp,
-                      label: 'KTP number',
+                      controller: _residentialId,
+                      label: 'Residential ID number',
                       labelInside: true,
                       prefixIcon: Icons.badge_outlined,
                       keyboardType: TextInputType.number,
@@ -96,14 +94,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.digitsOnly,
                       ],
-                      helperText: '16 digits, as printed on your KTP',
+                      helperText: '16 digits, as printed on your Residential ID',
                       validator: (value) {
                         final digits = (value ?? '').trim();
                         if (digits.isEmpty) {
-                          return 'Enter your KTP number';
+                          return 'Enter your Residential ID number';
                         }
                         if (!RegExp(r'^\d{16}$').hasMatch(digits)) {
-                          return 'A KTP number has 16 digits';
+                          return 'A Residential ID number has 16 digits';
                         }
                         return null;
                       },
@@ -111,17 +109,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     AppButton(
                       label: _documentLabel == null
-                          ? 'Attach KTP photo'
+                          ? 'Attach identity card photo'
                           : 'Attached: $_documentLabel',
                       icon: Icons.upload_file_outlined,
                       variant: AppButtonVariant.secondary,
                       onPressed: _busy
                           ? null
                           : () => setState(() {
-                                // TODO(team): replace with a real file picker
-                                // and the platform's document upload service.
+                                // Demo placeholder: no document leaves the device.
                                 // (DC-CM-3)
-                                _documentLabel = 'KTP.jpg';
+                                _documentLabel = 'identity-card.jpg';
                                 _error = null;
                               }),
                     ),

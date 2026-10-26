@@ -34,10 +34,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Sign in.
-    await tester.enterText(
-      find.byType(TextFormField).at(0),
-      'ana@example.com',
-    );
+    await tester.enterText(find.byType(TextFormField).at(0), 'ana@example.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'secret1');
     await tester.tap(find.text('Sign in'));
     await _settle(tester);
@@ -58,7 +55,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 3: location, date, time, duration.
-    await tester.tap(find.text('Campus library'));
+    await tester.tap(find.text('Community library'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Date'));
     await tester.pumpAndSettle();
@@ -99,7 +96,8 @@ void main() {
     // Pay.
     await tester.tap(find.textContaining('Pay IDR'));
     await _settle(tester);
-    expect(find.text('Your client code'), findsOneWidget);
+    expect(find.text('Your client code'), findsNothing);
+    expect(find.text('Confirm caregiver identity'), findsNothing);
     expect(find.textContaining('Reference'), findsOneWidget);
   });
 }

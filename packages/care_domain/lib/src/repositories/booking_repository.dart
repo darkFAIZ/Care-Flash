@@ -20,11 +20,19 @@ abstract interface class BookingRepository {
   /// Re-runs matching with a new gender filter after a no-match. (FR-CS-9)
   Future<Booking> retryWithGenderFilter(GenderFilter filter);
 
+  /// Replaces the current pre-payment match with a different caregiver.
+  Future<Booking> findAnotherCaregiver();
+
   /// Cancels the current booking. (FR-CS-9, FR-P-13)
   Future<void> cancelBooking(CancellationReason reason);
 
+  /// Confirms the one-time code spoken by the caregiver at arrival.
+  Future<ButtonVerificationResult> verifyCaregiverCode(String code);
+
   /// Verifies the physical safety button by QR or NFC. (FR-CS-13, FR-CS-14)
-  Future<ButtonVerificationResult> verifySafetyButton(ButtonVerification verification);
+  Future<ButtonVerificationResult> verifySafetyButton(
+    ButtonVerification verification,
+  );
 
   /// Ends the session early and pays the caregiver compensation. (FR-CS-16)
   Future<void> endEarly();

@@ -35,7 +35,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     final message = switch (status) {
       VerificationStatus.pending =>
-        'Your KTP is being reviewed. This usually takes a short while. '
+        'Your Residential ID is being reviewed. This usually takes a short while. '
             'You will be able to receive requests once you are verified.',
       VerificationStatus.approved =>
         'You are verified. You can now complete the safety module and start '
@@ -43,7 +43,7 @@ class VerificationStatusScreen extends ConsumerWidget {
       VerificationStatus.rejected =>
         caregiver.rejectionReason ?? 'Your submission was not accepted.',
       VerificationStatus.notSubmitted =>
-        'You have not submitted your KTP yet.',
+        'You have not submitted your Residential ID yet.',
     };
 
     return Scaffold(
@@ -74,15 +74,15 @@ class VerificationStatusScreen extends ConsumerWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (caregiver.ktpNumber != null) ...[
+                  if (caregiver.residentialIdNumber != null) ...[
                     const SizedBox(height: AppSpacing.lg),
                     AppCard(
                       padding: EdgeInsets.zero,
                       child: ListTile(
                         leading: const Icon(Icons.badge_outlined),
-                        title: AppText('KTP ${_maskedKtp(caregiver.ktpNumber!)}'),
+                        title: AppText('Residential ID ${_maskedResidentialId(caregiver.residentialIdNumber!)}'),
                         subtitle: const AppText(
-                          'Only the platform can see your full KTP number.',
+                          'This prototype does not upload or store your Residential ID.',
                         ),
                       ),
                     ),
@@ -100,7 +100,7 @@ class VerificationStatusScreen extends ConsumerWidget {
                   ] else if (status == VerificationStatus.rejected ||
                       status == VerificationStatus.notSubmitted) ...[
                     AppButton(
-                      label: 'Resubmit your KTP',
+                      label: 'Resubmit your Residential ID',
                       onPressed: () => context.go(OnboardingScreen.route),
                     ),
                   ] else if (status == VerificationStatus.pending) ...[
@@ -124,8 +124,8 @@ class VerificationStatusScreen extends ConsumerWidget {
 }
 
 /// Shows only the last four digits, e.g. `•••• •••• •••• 1234`.
-String _maskedKtp(String ktp) {
-  final digits = ktp.trim();
+String _maskedResidentialId(String idNumber) {
+  final digits = idNumber.trim();
   if (digits.length <= 4) {
     return digits;
   }

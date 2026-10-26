@@ -236,7 +236,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
 
   @override
   Future<void> submitVerification({
-    required String ktpNumber,
+    required String residentialIdNumber,
     required String documentLabel,
   }) async {
     final caregiver = _caregiver;
@@ -247,8 +247,8 @@ class MockCaregiverPlatform implements CaregiverPlatform {
       caregiver.copyWith(
         verificationStatus: VerificationStatus.pending,
         rejectionReason: null,
-        ktpNumber: ktpNumber.trim(),
-        ktpDocumentLabel: documentLabel,
+        residentialIdNumber: null,
+        identityCardLabel: null,
         verificationSubmittedAt: DateTime.now(),
       ),
     );
@@ -745,6 +745,12 @@ class MockCaregiverPlatform implements CaregiverPlatform {
   }
 
   @override
+  void simulateCareSeekerCodeConfirmation({bool valid = true}) {
+    final code = valid ? _activeBooking?.clientCode : '000000';
+    if (code != null) unawaited(verifyClientCode(code));
+  }
+
+  @override
   void simulateCareSeekerButtonScan({
     ButtonVerificationMethod method = ButtonVerificationMethod.qr,
     bool valid = true,
@@ -867,7 +873,7 @@ class MockCaregiverPlatform implements CaregiverPlatform {
               // TODO(team): the exact rejection wording is up to the review
               // team. (FR-CM-3)
               rejectionReason:
-                  'The KTP photo is blurry. Please upload a clearer photo and try again.',
+                  'The Residential ID photo is blurry. Please upload a clearer photo and try again.',
             ),
           ),
         );

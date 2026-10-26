@@ -11,6 +11,7 @@ import '../features/payment_info/payment_info_screen.dart';
 import '../features/rating/rating_screen.dart';
 import '../features/request/boundary_checklist_screen.dart';
 import '../features/request/confirmed_screen.dart';
+import '../features/request/caregiver_code_screen.dart';
 import '../features/request/gender_filter_screen.dart';
 import '../features/request/help_request_screen.dart';
 import '../features/request/matched_caregiver_screen.dart';
@@ -93,18 +94,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: ConfirmedScreen.route,
         builder: (context, state) => const ConfirmedScreen(),
       ),
+      GoRoute(
+        path: CaregiverCodeScreen.route,
+        builder: (context, state) => const CaregiverCodeScreen(),
+      ),
       // Safety, session, report and rating. (FR-CS-13 to FR-CS-20)
       GoRoute(
         path: ScanSafetyButtonScreen.qrRoute,
-        builder: (context, state) => const ScanSafetyButtonScreen(
-          method: ButtonVerificationMethod.qr,
-        ),
+        builder: (context, state) =>
+            const ScanSafetyButtonScreen(method: ButtonVerificationMethod.qr),
       ),
       GoRoute(
         path: ScanSafetyButtonScreen.nfcRoute,
-        builder: (context, state) => const ScanSafetyButtonScreen(
-          method: ButtonVerificationMethod.nfc,
-        ),
+        builder: (context, state) =>
+            const ScanSafetyButtonScreen(method: ButtonVerificationMethod.nfc),
       ),
       GoRoute(
         path: SessionScreen.route,
